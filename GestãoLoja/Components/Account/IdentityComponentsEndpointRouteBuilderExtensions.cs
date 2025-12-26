@@ -1,16 +1,16 @@
 using System.Security.Claims;
 using System.Text.Json;
+using GestãoLoja.Components.Account.Pages;
+using GestãoLoja.Components.Account.Pages.Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using GestãoLoja.Components.Account.Pages;
-using GestãoLoja.Components.Account.Pages.Manage;
-using GestãoLoja.Data;
+using MyMedia.Infrastructure;
 
-namespace Microsoft.AspNetCore.Routing;
+namespace GestãoLoja.Components.Account;
 
 internal static class IdentityComponentsEndpointRouteBuilderExtensions
 {

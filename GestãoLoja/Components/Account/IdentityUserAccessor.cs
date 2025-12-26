@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using GestãoLoja.Data;
+using MyMedia.Infrastructure;
 
 namespace GestãoLoja.Components.Account;
 
