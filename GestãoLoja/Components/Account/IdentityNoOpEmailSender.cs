@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using GestãoLoja.Data;
+using MyMedia.Infrastructure;
 
 namespace GestãoLoja.Components.Account;
 
