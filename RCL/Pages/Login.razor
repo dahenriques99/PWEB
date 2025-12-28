@@ -1,0 +1,96 @@
+﻿@page "/login"
+@using RCL.Dtos.Request
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject NavigationManager Navigation
+
+<div class="container">
+    <div class="row">
+        <div class="col-5">
+            <h2>Login to your account</h2>
+            @if (_errors.Any())
+            {
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach (var e in _errors)
+                        {
+                            <li>@e</li>
+                        }
+                    </ul>
+                </div>
+            }
+            <EditForm Model="_model" OnValidSubmit="Auth">
+                <DataAnnotationsValidator/>
+                <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <InputText id="email" type="email" class="form-control" @bind-Value="_model.Email" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Email"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="password">Password</label>
+                    <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Password"/>
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                    @(_isSubmitting ? "Signing in..." : "Submit")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-5">
+            <h2>No account?</h2>
+            <h5>Register <a href="/register">Here</a></h5>
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    private LoginRequestDto _model = new();
+    private bool _isSubmitting;
+    private List<string> _errors = new();
+
+    private async Task Auth()
+    {
+        _errors.Clear();
+        _isSubmitting = true;
+
+        try
+        {
+            var response = await RestService.Login(_model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var auth = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+                if (auth is null || string.IsNullOrWhiteSpace(auth.AccessToken))
+                {
+                    _errors.Add("Login failed: invalid server response.");
+                    return;
+                }
+                
+                await RestService.SetToken(auth.AccessToken);
+
+                Console.Write(auth.AccessToken);
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            var apiErr = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            if (apiErr?.Errors.Any() == true) _errors.AddRange(apiErr.Errors);
+            else _errors.Add("Login failed. Please check your credentials.");
+        }
+        catch (Exception ex)
+        {
+            _errors.Add(ex.Message);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+}

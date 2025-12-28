@@ -1,0 +1,123 @@
+﻿@page "/register"
+@using RCL.Dtos.Request
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject NavigationManager Navigation
+
+<div class="container">
+    <div class="row">
+        <div class="col-12 col-md-6 col-lg-5">
+            <h2>Register to get started</h2>
+            @if (_errors.Any())
+            {
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach (var e in _errors)
+                        {
+                            <li>@e</li>
+                        }
+                    </ul>
+                </div>
+            }
+            <EditForm Model="_model" OnValidSubmit="Auth">
+                <DataAnnotationsValidator/>
+
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label class="form-label" for="name">Name</label>
+                    <InputText id="name" class="form-control" @bind-Value="_model.Name" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Name"/>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label class="form-label" for="surname">Surname</label>
+                    <InputText id="surname" class="form-control" @bind-Value="_model.Surname" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Surname"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="nif">NIF</label>
+                    <InputText id="nif" class="form-control" @bind-Value="_model.Nif" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Nif"/>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label class="form-label" for="email">Email</label>
+                    <InputText id="email" type="email" class="form-control" @bind-Value="_model.Email" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Email"/>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label class="form-label" for="password">Password</label>
+                    <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" @oninput="_ => _errors.Clear()"/>
+                    <ValidationMessage For="() => _model.Password"/>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_confirmPassword" @oninput="_ => _errors.Clear()"/>
+
+                    @if (!_passwordsEqual)
+                    {
+                        <div class="text-danger small mt-1">Passwords don't match.</div>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                    @(_isSubmitting ? "Submitting..." : "Register")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterRequestDto _model = new();
+    private string _confirmPassword = string.Empty;
+
+    private bool _passwordsEqual = true;
+    private bool _isSubmitting;
+    
+    private List<string> _errors = new();
+
+    private async Task Auth()
+    {
+        _errors.Clear();
+        _passwordsEqual = _model.Password == _confirmPassword;
+
+        if (!_passwordsEqual)
+            return;
+
+        _isSubmitting = true;
+
+        try
+        {
+            var response = await RestService.Register(_model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/awaitApproval");
+                return;
+            }
+
+            var apiErr = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            if (apiErr?.Errors?.Any() == true)
+                _errors = apiErr.Errors;
+            else
+                _errors = new() { "Registration failed. Please try again." };
+        }
+        catch (Exception ex)
+        {
+            _errors = new() { $"An error occurred: {ex.Message}" };
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+}
