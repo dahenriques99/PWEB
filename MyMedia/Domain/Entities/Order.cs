@@ -18,12 +18,6 @@ public class Order
     public string Status { get; set; } = "Pending";
 
     public DateTime Date { get; set; } = DateTime.Now;
-
-    [Required]
-    public string CardType { get; set; } = string.Empty;
-
-    [Required]
-    public string Card { get; set; } = string.Empty;
-
-    public ICollection<ProductSnapshot> ProductSnapshots { get; set; } = new List<ProductSnapshot>();
+    
+    public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

@@ -12,7 +12,7 @@ using MyMedia.Infrastructure;
 namespace MyMedia.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251226155417_Initial")]
+    [Migration("20251228191310_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -158,27 +158,6 @@ namespace MyMedia.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.CartProduct", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "ProductId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("CartProducts");
-                });
-
             modelBuilder.Entity("MyMedia.Domain.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -196,6 +175,9 @@ namespace MyMedia.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("ParentCategoryId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Categories");
@@ -208,14 +190,6 @@ namespace MyMedia.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Card")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CardType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -238,6 +212,33 @@ namespace MyMedia.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("MyMedia.Domain.Entities.OrderItem", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderItems");
+                });
+
             modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -249,6 +250,9 @@ namespace MyMedia.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("FinalPrice")
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<byte[]>("ImageData")
                         .HasColumnType("varbinary(max)");
@@ -264,8 +268,9 @@ namespace MyMedia.Migrations
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
-                    b.Property<int>("SupplierId")
-                        .HasColumnType("int");
+                    b.Property<string>("SupplierId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
@@ -282,84 +287,11 @@ namespace MyMedia.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
                     b.HasKey("ProductId", "CategoryId");
 
                     b.HasIndex("CategoryId");
 
                     b.ToTable("ProductCategories");
-                });
-
-            modelBuilder.Entity("MyMedia.Domain.Entities.ProductSnapshot", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductSnapshots");
-                });
-
-            modelBuilder.Entity("MyMedia.Domain.Entities.Supplier", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("LogoData")
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Nif")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("nvarchar(9)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.ApplicationUser", b =>
@@ -368,6 +300,9 @@ namespace MyMedia.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClientType")
                         .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -381,8 +316,8 @@ namespace MyMedia.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                    b.Property<byte[]>("ImageData")
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -393,6 +328,9 @@ namespace MyMedia.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<long?>("Nif")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -413,6 +351,9 @@ namespace MyMedia.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<string>("Surname")
                         .HasMaxLength(50)
@@ -489,25 +430,6 @@ namespace MyMedia.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.CartProduct", b =>
-                {
-                    b.HasOne("MyMedia.Domain.Entities.Product", "Product")
-                        .WithMany("CartProducts")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyMedia.Infrastructure.ApplicationUser", "User")
-                        .WithMany("CartProducts")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
                 {
                     b.HasOne("MyMedia.Infrastructure.ApplicationUser", "User")
@@ -519,10 +441,29 @@ namespace MyMedia.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MyMedia.Domain.Entities.OrderItem", b =>
+                {
+                    b.HasOne("MyMedia.Domain.Entities.Order", "Order")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMedia.Domain.Entities.Product", "Product")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
                 {
-                    b.HasOne("MyMedia.Domain.Entities.Supplier", "Supplier")
-                        .WithMany("Products")
+                    b.HasOne("MyMedia.Infrastructure.ApplicationUser", "Supplier")
+                        .WithMany("SuppliedProducts")
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -549,25 +490,6 @@ namespace MyMedia.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.ProductSnapshot", b =>
-                {
-                    b.HasOne("MyMedia.Domain.Entities.Order", "Order")
-                        .WithMany("ProductSnapshots")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyMedia.Domain.Entities.Product", "Product")
-                        .WithMany("ProductSnapshots")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-
-                    b.Navigation("Product");
-                });
-
             modelBuilder.Entity("MyMedia.Domain.Entities.Category", b =>
                 {
                     b.Navigation("ProductCategories");
@@ -575,28 +497,21 @@ namespace MyMedia.Migrations
 
             modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
                 {
-                    b.Navigation("ProductSnapshots");
+                    b.Navigation("OrderItems");
                 });
 
             modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
                 {
-                    b.Navigation("CartProducts");
+                    b.Navigation("OrderItems");
 
                     b.Navigation("ProductCategories");
-
-                    b.Navigation("ProductSnapshots");
-                });
-
-            modelBuilder.Entity("MyMedia.Domain.Entities.Supplier", b =>
-                {
-                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.ApplicationUser", b =>
                 {
-                    b.Navigation("CartProducts");
-
                     b.Navigation("Orders");
+
+                    b.Navigation("SuppliedProducts");
                 });
 #pragma warning restore 612, 618
         }
