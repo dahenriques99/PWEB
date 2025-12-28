@@ -14,5 +14,8 @@ public class Category
     [StringLength(200, ErrorMessage = "The Category Description must not exceed 200 characters")]
     public string? Description { get; set; }
 
-    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+    public int? ParentCategoryId { get; set; }
+    
+    public ICollection<ProductCategory> ProductCategories { get; set; }
+        = new List<ProductCategory>();
 }

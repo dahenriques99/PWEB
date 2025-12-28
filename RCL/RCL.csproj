@@ -24,4 +24,8 @@
       <AdditionalFiles Include="Shared\NavMenu.razor" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\MyMedia\MyMedia.csproj" />
+    </ItemGroup>
+
 </Project>
