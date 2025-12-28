@@ -7,8 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ContentIncludedByDefault Remove="Components\Layout\MainLayout.razor" />
-      <_ContentIncludedByDefault Remove="Components\Layout\NavMenu.razor" />
+        <ProjectReference Include="..\RCL\RCL.csproj" />
     </ItemGroup>
 
 </Project>
