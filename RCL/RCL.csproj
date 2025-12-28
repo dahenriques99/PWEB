@@ -19,4 +19,9 @@
       <Folder Include="Components\Categories\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AdditionalFiles Include="Shared\MainLayout.razor" />
+      <AdditionalFiles Include="Shared\NavMenu.razor" />
+    </ItemGroup>
+
 </Project>
