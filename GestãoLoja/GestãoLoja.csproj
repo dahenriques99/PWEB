@@ -20,9 +20,4 @@
         <ProjectReference Include="..\MyMedia\MyMedia.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Components\Pages\ProductPages\" />
-      <Folder Include="Components\Pages\Product\" />
-    </ItemGroup>
-
 </Project>

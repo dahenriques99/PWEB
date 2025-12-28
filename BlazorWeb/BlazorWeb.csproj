@@ -10,4 +10,12 @@
         <ProjectReference Include="..\RCL\RCL.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Components\Pages\Error.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.100" />
+    </ItemGroup>
+
 </Project>

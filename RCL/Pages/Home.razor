@@ -1,5 +1,185 @@
 ﻿@page "/"
+@using RCL.Dtos.Request
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject NavigationManager Navigation
 
-<h1>Hello, world!</h1>
+<div class="row g-3">
+    <!-- Sidebar -->
+    <div class="col-12 col-md-3">
+        <div class="border rounded p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="m-0">Filters</h5>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        @onclick="ClearFilters">
+                    Clear
+                </button>
+            </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="matchAllSwitch"
+                       @bind="_query.MatchAllCategories"
+                       @bind:after="ReloadProducts" />
+                <label class="form-check-label" for="matchAllSwitch">
+                    Match all selected categories
+                </label>
+            </div>
 
-Welcome to your new app.
+            <h6 class="text-muted">Categories</h6>
+
+            @if (_categories == null)
+            {
+                <p class="text-muted mb-0">Loading...</p>
+            }
+            else
+            {
+                @foreach (var c in _categories)
+                {
+                    var isChecked = _selectedCategoryIds.Contains(c.Id);
+
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="@($"cat-{c.Id}")"
+                               checked="@isChecked"
+                               @onchange="async e => await ToggleCategory(c.Id, (bool)e.Value!)"/>
+
+                        <label class="form-check-label" for="@($"cat-{c.Id}")">
+                            @c.Name
+                        </label>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Products -->
+    <div class="col-12 col-md-9">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h4 class="m-0">Products</h4>
+
+            <div class="text-muted">
+                @(_products?.Count() ?? 0) items
+            </div>
+        </div>
+
+        @if (_products == null)
+        {
+            <p class="text-muted">Loading...</p>
+        }
+        else if (!_products.Any())
+        {
+            <div class="alert alert-secondary">
+                No products match your filters.
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                @foreach (var p in _products)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-white">
+                                <div class="fw-semibold text-truncate" title="@p.Name">@p.Name</div>
+                            </div>
+
+                            <div class="ratio ratio-4x3 bg-light">
+                                @if (p.ImageData is { Length: > 0 })
+                                {
+                                    <img src="@ToImageSrc(p.ImageData)"
+                                         class="card-img-top object-fit-cover"
+                                         alt="@p.Name"/>
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-center text-muted">
+                                        No image
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-baseline">
+                                    <div class="fs-5 fw-bold">@p.FinalPrice.ToString("0.00") €</div>
+                                    @if (p.FinalPrice != p.Price)
+                                    {
+                                        <div class="text-muted text-decoration-line-through">
+                                            @p.Price.ToString("0.00") €
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="text-muted small mt-1">
+                                    Supplier: <span class="fw-semibold">@p.SupplierName</span>
+                                </div>
+
+                                <div class="mt-2 small">
+                                    Stock: <span class="fw-semibold">@p.Stock</span>
+                                </div>
+
+                                <div class="mt-auto pt-3 d-grid gap-2">
+                                    <button class="btn btn-primary btn-sm" @onclick="() => ViewDetails(p.Id)">
+                                        View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private IEnumerable<CategoryDto>? _categories;
+    private IEnumerable<ProductDto>? _products;
+
+    private readonly HashSet<int> _selectedCategoryIds = new();
+
+    private ProductQuery _query = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await RestService.GetAllCategories();
+        await ReloadProducts();
+    }
+
+    private async Task ToggleCategory(int categoryId, bool isChecked)
+    {
+        if (isChecked) _selectedCategoryIds.Add(categoryId);
+        else _selectedCategoryIds.Remove(categoryId);
+
+        _query.CategoryIds = _selectedCategoryIds.ToList();
+        await ReloadProducts();
+    }
+
+    private async Task ReloadProducts()
+    {
+        _query.CategoryIds = _selectedCategoryIds.Count > 0 ? _selectedCategoryIds.ToList() : null;
+
+        _products = await RestService.GetProducts(_query);
+        StateHasChanged();
+    }
+
+    private async Task ClearFilters()
+    {
+
+        _selectedCategoryIds.Clear();
+        _query = new ProductQuery();
+        await ReloadProducts();
+    }
+
+    private static string ToImageSrc(byte[] bytes)
+    {
+        return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    private void ViewDetails(int productId)
+    {
+        Navigation.NavigateTo($"/product/{productId}");
+    }
+
+}

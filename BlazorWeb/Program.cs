@@ -1,6 +1,14 @@
 using BlazorWeb.Components;
+using RCL.Components.Services;
+using RCL.Pages;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddHttpClient<RestService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7124/");
+});
+builder.Services.AddScoped<AuthStateService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -22,7 +30,7 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
-    .AddAdditionalAssemblies(typeof(RCL.Pages.Home).Assembly)
+    .AddAdditionalAssemblies(typeof(Home).Assembly)
     .AddInteractiveServerRenderMode();
 
 app.Run();

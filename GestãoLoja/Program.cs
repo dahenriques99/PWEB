@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using GestãoLoja.Components;
+﻿using GestãoLoja.Components;
 using GestãoLoja.Components.Account;
 using GestãoLoja.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using MyMedia.Infrastructure;
-using MyMedia.Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,7 +46,11 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+        options.User.RequireUniqueEmail = true;
+    })
     .AddRoles<IdentityRole>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
@@ -76,8 +79,9 @@ using (var scope = app.Services.CreateScope())
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
 
-        await Initialization.CreateInitialData(userManager, roleManager);
+        await Initialization.CreateInitialData(userManager, roleManager, dbContext);
         //Log.Information("Identity User Data Seeding finished");
     }
     catch (Exception)
