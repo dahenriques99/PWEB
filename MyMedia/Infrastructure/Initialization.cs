@@ -9,7 +9,7 @@ public static class Initialization
         RoleManager<IdentityRole> roleManager)
     {
         // Add default Roles
-        string[] roles = ["Admin", "Gestor", "Cliente"];
+        string[] roles = ["Admin", "Worker", "Gestor", "Cliente"];
 
         foreach (var role in roles)
         {

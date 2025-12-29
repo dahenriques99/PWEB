@@ -2,7 +2,7 @@
 
 namespace MyMedia.Domain.Entities;
 
-public class ProductSnapshot
+public class OrderItem
 {
     [Key]
     public int Id { get; set; }

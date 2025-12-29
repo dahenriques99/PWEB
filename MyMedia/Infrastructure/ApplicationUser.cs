@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using MyMedia.Domain.Entities;
+using MyMedia.Domain.Entities.enums;
 
 namespace MyMedia.Infrastructure;
 
@@ -10,14 +11,19 @@ public class ApplicationUser : IdentityUser
     // [Required(ErrorMessage = "The user name is required.", AllowEmptyStrings = false)]
     [StringLength(50, ErrorMessage = "The user name must not exceed 50 characters.")]
     public string? Name { get; set; }
+    
     [StringLength(50, ErrorMessage = "The user surname must not exceed 50 characters.")]
     public string? Surname { get; set; }
-    // [Length(9, 9, ErrorMessage = "The NIF must be 9 digits.")]
-    // public long? Nif { get; set; }
-    public bool IsActive { get; set; } = true;
-    //public byte[] ImageData { get; set; } = [];
-    // public UserProfile UserProfile { get; set; }
-
-    public ICollection<CartProduct> CartProducts { get; set; } = new List<CartProduct>();
+    
+    [Length(9, 9, ErrorMessage = "The NIF must be 9 digits.")]
+    public long? Nif { get; set; }
+    
+    public UserStatus Status { get; set; } = UserStatus.Pending;
+    
+    public UserType ClientType { get; set; } = UserType.Client;
+    
+    public byte[]? ImageData { get; set; } = [];
+        
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Product> SuppliedProducts { get; set; } = new List<Product>();
 }
