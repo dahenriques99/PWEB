@@ -111,6 +111,7 @@
 
 @code {
     private Product Product { get; set; } = new();
+    [SupplyParameterFromForm] private Product Product { get; set; } = new();
     private List<ApplicationUser> _suppliers = new();
     private bool _saving;
     private string? _previewUrl;
