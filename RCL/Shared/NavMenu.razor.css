@@ -1,3 +1,61 @@
+/* Navbar Styles */
+.navbar {
+    height: var(--navbar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.icon-button {
+    outline: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.navbar-item {
+    display: flex;
+    align-items: center;
+    width: 20vw;
+    gap: var(--space-md);
+}
+
+.logo-container {
+    justify-content: flex-start;
+}
+
+.search-bar-container {
+    width: 30vw;
+    justify-content: center;
+}
+
+.user-container,
+.menu-icon {
+    justify-content: flex-end;
+}
+
+.menu-icon {
+    display: none;
+    cursor: pointer;
+}
+
+/* Responsive Styles for Navbar */
+@media (max-width: 768px) {
+    .user-container {
+        display: none;
+    }
+
+    .menu-icon {
+        display: flex;
+    }
+}
+
 .navbar-toggler {
     appearance: none;
     cursor: pointer;
