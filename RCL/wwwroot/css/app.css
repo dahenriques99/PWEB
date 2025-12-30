@@ -1,3 +1,26 @@
+/** {*/
+/*    margin: 0px;*/
+/*    padding: 0px;*/
+/*    box-sizing: border-box;*/
+/*    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;*/
+/*}*/
+
+:root {
+    --font-size-sm: clamp(0.8rem, 1vw, 1.2rem);
+
+    --icon-size: clamp(1.2rem, 1.4vw, 1.6rem);
+
+    --space-sm: clamp(0.6rem, 0.8vw, 1rem);
+    --space-md: clamp(1.2rem, 1.4vw, 1.6rem);
+    --space-lg: clamp(1.8rem, 2vw, 2.2rem);
+
+    --navbar-height: clamp(80px, 15vh, 160px);
+
+    --black: #222222;
+    --grey: #808080;
+    --white: #fefefe;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
