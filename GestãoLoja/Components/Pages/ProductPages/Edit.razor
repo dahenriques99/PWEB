@@ -1,0 +1,139 @@
+﻿@page "/products/edit"
+@attribute [Authorize(Roles = "Admin,Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Domain.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager Nav
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit Product</h1>
+
+<hr />
+@if (Product is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="Product.Id" value="@Product.Id" />
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <InputText id="description" @bind-Value="Product.Description" class="form-control" />
+                    <ValidationMessage For="() => Product.Description" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="price" class="form-label">Price:</label>
+                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Price" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="finalprice" class="form-label">FinalPrice:</label>
+                    <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.FinalPrice" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="stock" class="form-label">Stock:</label>
+                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Stock" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="imagedata" class="form-label">ImageData:</label> 
+                    <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
+                    @if (_previewUrl is not null)
+                    {
+                        <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
+                    }
+                    <ValidationMessage For="() => Product.ImageData" class="text-danger" /> 
+                </div> 
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="/products" class="btn btn-secondary">Cancel</a>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/products">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Product? Product { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        Product = await context.Products.FindAsync(Id);
+        if (Product is null)
+        {
+            Nav.NavigateTo("notfound");
+        }
+    }
+
+    private async Task UpdateProduct()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Attach(Product!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProductExists(Product!.Id))
+            {
+                Nav.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        Nav.NavigateTo("/products");
+    }
+
+    private bool ProductExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Products.Any(e => e.Id == id);
+    }
+    
+    private string? _previewUrl;
+
+    private async Task OnImageChange(InputFileChangeEventArgs e)
+    {
+        if (Product == null) return;
+        
+        var file = e.File;
+        using var stream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(stream);
+        Product.ImageData = stream.ToArray(); //Only saves bytes
+
+        //Creates pre visualization
+        using var previewStream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(previewStream);
+        var base64 = Convert.ToBase64String(previewStream.ToArray());
+        _previewUrl = $"data:{file.ContentType};base64,{base64}";
+    }
+}
