@@ -24,6 +24,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\MyMedia\MyMedia.csproj"/>
+        <ProjectReference Include="..\RCL\RCL.csproj" />
     </ItemGroup>
 
 </Project>

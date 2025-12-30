@@ -1,4 +1,4 @@
-﻿namespace MyMedia.Domain.Dtos;
+﻿namespace RCL.Dtos;
 
 public class ProductCategoryDto
 {

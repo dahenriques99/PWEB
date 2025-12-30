@@ -4,8 +4,8 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using MyMedia.Domain.Dtos;
 using MyMedia.Infrastructure;
+using RCL.Dtos;
 
 namespace WebAPI.Controllers;
 

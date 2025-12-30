@@ -1,0 +1,62 @@
+﻿@page "/users/create"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject IPasswordHasher<ApplicationUser> PasswordHasher
+@inject NavigationManager NavigationManager
+
+<PageTitle>Gestão de Utilizadores</PageTitle>
+
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+
+<h1 class="mb-4 text-center">Create User</h1>
+<hr/>
+<div class="container mb-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <EditForm method="post" Model="User" OnValidSubmit="AddUser" FormName="create">
+                <DataAnnotationsValidator/>
+                @* <ValidationSummary class="text-danger" role="alert"/> *@
+                @* <StringInput Label="User Name" @bind-Value="User.UserName" Validation="@(() => User.UserName)" />
+                <StringInput Label="User Email" @bind-Value="User.Email" Validation="@(() => User.Email)" />
+                <StringInput Label="User Password" @bind-Value="Password" Validation="@(() => Password)" Hidden="true"/>
+                <StringInput Label="User Phone Number" @bind-Value="User.PhoneNumber" Validation="@(() => User.PhoneNumber)" />
+                <StringInput Label="User NIF" @bind-Value="User.NIF" Validation="@(() => User.NIF)" />
+                <ImageUpload Label="User Logo" ValidationFor="@(() => User.ImageData)" OnImageSelectedCallback="HandleLogoSelected" /> *@
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <a href="/users" class="btn btn-secondary">Back To List</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm] private ApplicationUser User { get; set; } = new();
+    
+    List<ApplicationUser>? users;
+
+    private string Password { get; set; } = string.Empty;
+
+    private async Task AddUser()
+    {
+        User.PasswordHash = PasswordHasher.HashPassword(User, Password);
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Users.Add(User);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/users");
+    }
+
+    private void HandleLogoSelected(byte[] imageData)
+    {
+        User.ImageData = imageData;
+    }
+}

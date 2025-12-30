@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using MyMedia.Domain.Entities;
 
-namespace MyMedia.Domain.Dtos;
+namespace RCL.Dtos;
 
 public class DtoProduct
 {
@@ -18,7 +17,7 @@ public class DtoProduct
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public byte[] ImageData { get; set; } = [];
-    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
-    public ICollection<CartProduct> CartProducts { get; set; } = new List<CartProduct>();
-    public ICollection<ProductSnapshot> ProductSnapshots { get; set; } = new List<ProductSnapshot>();
+    // public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+    // public ICollection<CartProduct> CartProducts { get; set; } = new List<CartProduct>();
+    // public ICollection<OrderItem> ProductSnapshots { get; set; } = new List<OrderItem>();
 }

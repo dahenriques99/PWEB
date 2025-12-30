@@ -5,8 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
-
-
+    
     <ItemGroup>
         <SupportedPlatform Include="browser"/>
     </ItemGroup>
@@ -17,15 +16,12 @@
 
     <ItemGroup>
       <Folder Include="Components\Categories\" />
+      <Folder Include="Dto\" />
     </ItemGroup>
 
     <ItemGroup>
       <AdditionalFiles Include="Shared\MainLayout.razor" />
       <AdditionalFiles Include="Shared\NavMenu.razor" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\MyMedia\MyMedia.csproj" />
     </ItemGroup>
 
 </Project>

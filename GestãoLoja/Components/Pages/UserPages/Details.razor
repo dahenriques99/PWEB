@@ -1,0 +1,100 @@
+﻿@page "/users/details"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>User Details</PageTitle>
+
+@if (user is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container my-5">
+        <h1 class="text-center mb-4">User Details</h1>
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    @* <DetailsPageLayout Title="User Details"  *@
+                    @*                    PrimaryButtonLink="@($"/users/edit?id={user?.Id}")"  *@
+                    @*                    SecondaryButtonLink="/users"> *@
+                    <h2 class="card-title">@user.UserName</h2>
+                    <hr/>
+                    <div class="col-md-8">
+                        <dl class="row">
+                            @* <DetailItem Label="Email" Value="@user.Email" /> *@
+                            @* <DetailItem Label="Phone Number" Value="@user.PhoneNumber" /> *@
+                            @* <DetailItem Label="NIF" Value="@user.NIF" /> *@
+                            <h3>Products</h3>
+                            <hr/>
+                            @* @if (user.CartProducts != null && user.CartProducts.Any()) *@
+                            @* { *@
+                            @*     <div class="d-flex flex-wrap"> *@
+                            @*         @foreach (var cartProduct in user.CartProducts) *@
+                            @*         { *@
+                            @*             <a class="text-decoration-none" *@
+                            @*                href="@($"/products/details?id={cartProduct.ProductId}")"> *@
+                            @*                 <Card Title="@($"{@cartProduct.Product.Name} x {cartProduct.Quantity}")" *@
+                            @*                       ImageData="@cartProduct.Product.ImageData" Border="true"/> *@
+                            @*             </a> *@
+                            @*         } *@
+                            @*     </div> *@
+                            @* } *@
+                            @* else *@
+                            @* { *@
+                            @*     <p>This user has no products in the cart.</p> *@
+                            @* } *@
+                        </dl>
+                    </div>
+                    <div class="text-center mt-4">
+                        @* @if (IsDelete) *@
+                        @* { *@
+                        @*     <EditForm method="post" Model="@FormModel"  *@
+                        @*               OnValidSubmit="@Callback" FormName="delete" *@
+                        @*               Enhance> *@
+                        @*         <FormButton Label="Delete" Type="danger"/> *@
+                        @*         <LinkButton Label="Back To List" Link="@SecondaryButtonLink"/> *@
+                        @*     </EditForm> *@
+                        @* } *@
+                        @* else *@
+                        @* { *@
+                        @*     <LinkButton Label="Edit" Link="@PrimaryButtonLink" Type="primary"/> *@
+                        @*     <LinkButton Label="Back To List" Link="@SecondaryButtonLink"/> *@
+                        @* } *@
+                    </div>
+                </div>
+            </div>
+        </div>
+        >
+
+        <div class="col-md-4">
+            @* <ImageDisplay ImageData="@user.ImageData" /> *@
+        </div>
+    </div>
+}
+
+@code {
+    private ApplicationUser? user;
+    private bool IsDelete { get; set; } = false;
+
+    [SupplyParameterFromQuery] private string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        // user = await context.Users
+        //     .Include(user => user.CartProducts)
+        //     .ThenInclude(cartProduct => cartProduct.Product)
+        //     .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (user is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+}

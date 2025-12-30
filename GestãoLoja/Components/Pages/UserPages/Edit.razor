@@ -1,0 +1,156 @@
+﻿@page "/users/edit"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Edit User</PageTitle>
+
+@if (User is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h1 class="mb-4 text-center">Edit User</h1>
+    <hr/>
+    <div class="container mb-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <EditForm method="post" Model="User"
+                          OnValidSubmit="UpdateUser" FormName="edit" Enhance>
+                    <DataAnnotationsValidator/>
+                    <ValidationSummary class="text-danger" role="alert"/>
+                    <input type="hidden" name="User.Id" value="@User.Id"/>
+                    @* <StringInput Label="User Name" @bind-Value="User.UserName" Validation="@(() => User.UserName)" /> *@
+                    @* <StringInput Label="User Email" @bind-Value="User.Email" Validation="@(() => User.Email)" /> *@
+                    @* <StringInput Label="User Phone Number" @bind-Value="User.PhoneNumber" Validation="@(() => User.PhoneNumber)" /> *@
+                    @* <ImageUpload Label="User Logo" ValidationFor="@(() => User.ImageData)" OnImageSelectedCallback="HandleLogoSelected" InitialImageData="User.ImageData"/> *@
+
+                    <label class="form-label">Roles:</label>
+                    @if (IsAdmin)
+                    {
+                        <div class="d-flex flex-wrap gap-3">
+                            @foreach (var role in Roles)
+                            {
+                                <div class="form-check me-3">
+                                    <input class="form-check-input" type="checkbox" id="role-@role.Id"
+                                           @bind="role.IsSelected"/>
+                                    <label class="form-check-label" for="role-@role.Id">
+                                        @role.Name
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p>You do not have permission to modify roles.</p>
+                    }
+
+                    <div class="text-center mt-4">
+                        <FormButton Label="Submit"/>
+                        <LinkButton Label="Back To List" Link="/users"/>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/users">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] private string Id { get; set; }
+
+    private ApplicationUser? User { get; set; }
+
+    private List<RoleSelectionModel> Roles { get; set; } = new();
+
+    private bool IsAdmin { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load the user by Id
+        User = await UserManager.FindByIdAsync(Id);
+        if (User is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        // Get the current logged-in user's roles
+        var currentUser = await UserManager.GetUserAsync((await AuthenticationStateProvider.GetAuthenticationStateAsync()).User);
+        var currentUserRoles = await UserManager.GetRolesAsync(currentUser); // Renamed from 'userRoles' to 'currentUserRoles'
+        IsAdmin = currentUserRoles.Contains("Admin");
+
+        // Get all roles from the RoleManager
+        var allRoles = await RoleManager.Roles.ToListAsync();
+
+        // Get the user's current roles
+        var userRoles = await UserManager.GetRolesAsync(User); // This is for the user being edited
+
+        // Prepare the list of role models
+        Roles = allRoles.Select(role => new RoleSelectionModel
+        {
+            Id = role.Id,
+            Name = role.Name,
+            IsSelected = userRoles.Contains(role.Name)
+        }).ToList();
+    }
+
+    private async Task UpdateUser()
+    {
+        // First, update the user details
+        var user = await UserManager.FindByIdAsync(User.Id);
+        if (user == null) return;
+
+        user.UserName = User.UserName;
+        user.Email = User.Email;
+        user.PhoneNumber = User.PhoneNumber;
+
+        var result = await UserManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            // Handle error updating user
+            return;
+        }
+
+        // Get the user's current roles
+        var userRoles = await UserManager.GetRolesAsync(user);
+
+        // Remove the user from roles that are no longer selected
+        var rolesToRemove = userRoles.Except(Roles.Where(r => r.IsSelected).Select(r => r.Name)).ToList();
+        await UserManager.RemoveFromRolesAsync(user, rolesToRemove);
+
+        // Add the user to new roles
+        var rolesToAdd = Roles.Where(r => r.IsSelected).Select(r => r.Name).Except(userRoles).ToList();
+        await UserManager.AddToRolesAsync(user, rolesToAdd);
+
+        // Redirect to users list after saving
+        NavigationManager.NavigateTo("/users");
+    }
+
+    private void HandleLogoSelected(byte[] imageData)
+    {
+        if (User is not null)
+        {
+            // User.ImageData = imageData;
+        }
+    }
+
+    public class RoleSelectionModel
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+}

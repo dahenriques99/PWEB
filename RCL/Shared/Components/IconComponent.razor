@@ -1,0 +1,11 @@
+﻿<img class="icon" src="@GetName()"/>
+
+@code {
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    private string GetName()
+    {
+        return $"_content/RCL/icons/{Name}-icon.svg";
+    }
+}

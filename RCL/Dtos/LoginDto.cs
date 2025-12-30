@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MyMedia.Domain.Dtos;
+namespace RCL.Dtos;
 
 public class LoginDto
 {

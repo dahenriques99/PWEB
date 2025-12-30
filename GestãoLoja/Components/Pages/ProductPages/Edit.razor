@@ -1,0 +1,124 @@
+﻿@page "/products/edit"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Domain.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>Product</h2>
+<hr />
+@if (Product is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="Product.Id" value="@Product.Id" />
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="supplierid" class="form-label">SupplierId:</label>
+                    <InputText id="supplierid" @bind-Value="Product.SupplierId" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.SupplierId" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <InputText id="description" @bind-Value="Product.Description" class="form-control" />
+                    <ValidationMessage For="() => Product.Description" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="price" class="form-label">Price:</label>
+                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Price" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="finalprice" class="form-label">FinalPrice:</label>
+                    <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.FinalPrice" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="stock" class="form-label">Stock:</label>
+                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Stock" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="imagedata" class="form-label">ImageData:</label>
+                    @* <InputText id="imagedata" @bind-Value="Product.ImageData" class="form-control" /> *@
+                    <ValidationMessage For="() => Product.ImageData" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/products">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Product? Product { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Product ??= await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateProduct()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(Product!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProductExists(Product!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/products");
+    }
+
+    private bool ProductExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Products.Any(e => e.Id == id);
+    }
+}
