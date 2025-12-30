@@ -127,18 +127,8 @@ else
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
-        // if (Product == null) return;
-        //
-        // var file = e.File;
-        // using var stream = new MemoryStream();
-        // await file.OpenReadStream().CopyToAsync(stream);
-        // Product.ImageData = stream.ToArray(); //Only saves bytes
-        //
-        // //Creates pre visualization
-        // using var previewStream = new MemoryStream();
-        // await file.OpenReadStream().CopyToAsync(previewStream);
-        // var base64 = Convert.ToBase64String(previewStream.ToArray());
-        // _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        if (Product == null) return;
+        
         var file = e.File;
 
         // Allow up to 5 MB (adjust if needed)
