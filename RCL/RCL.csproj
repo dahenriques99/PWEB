@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -8,24 +8,24 @@
 
 
     <ItemGroup>
-        <SupportedPlatform Include="browser"/>
+        <SupportedPlatform Include="browser" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.22"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.22" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Components\Categories\" />
+      <PackageReference Include="Microsoft.AspNetCore.Components" Version="8.0.22" />
     </ItemGroup>
 
     <ItemGroup>
-      <AdditionalFiles Include="Shared\MainLayout.razor" />
-      <AdditionalFiles Include="Shared\NavMenu.razor" />
+      <UpToDateCheckInput Remove="Components\Cart\CartIcon.razor" />
+      <UpToDateCheckInput Remove="Components\Cart\CartSumary.razor" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MyMedia\MyMedia.csproj" />
+      <None Include="wwwroot\isecLogo.png" />
     </ItemGroup>
 
 </Project>
