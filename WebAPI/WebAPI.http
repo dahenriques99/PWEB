@@ -1,6 +1,7 @@
-@WebAPI_HostAddress = http://localhost:5095
+@WebAPI_HostAddress = https://localhost:5095
 
 GET {{WebAPI_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+POST http://localhost:5095/api/Product?Id=1&SupplierId=1&Name=a&Price=1&FinalPrice=2&Stock=1

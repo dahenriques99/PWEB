@@ -326,8 +326,9 @@ namespace MyMedia.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<long?>("Nif")
-                        .HasColumnType("bigint");
+                    b.Property<string>("Nif")
+                        .HasMaxLength(9)
+                        .HasColumnType("nvarchar(9)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)

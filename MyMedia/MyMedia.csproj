@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Folder Include="Domain\"/>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
