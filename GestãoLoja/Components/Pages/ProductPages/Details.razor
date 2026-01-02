@@ -1,7 +1,12 @@
 ﻿@page "/products/details"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using MyMedia.Domain.Entities
-@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@using MyMedia.Infrastructure
+@inject UserManager<ApplicationUser> UserManager
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 
 <PageTitle>Details</PageTitle>
@@ -11,48 +16,51 @@
 <div>
     <h2>Product</h2>
     <hr />
-    @if (product is null)
+    @if (_product is null)
     {
         <p><em>Loading...</em></p>
     }
     else {
         <dl class="row">
-            <dt class="col-sm-2">SupplierId</dt>
-            <dd class="col-sm-10">@product.SupplierId</dd>
+            <dt class="col-sm-2">Supplier</dt>
+            <dd class="col-sm-10">@_product.Supplier?.Name</dd>
             <dt class="col-sm-2">Name</dt>
-            <dd class="col-sm-10">@product.Name</dd>
+            <dd class="col-sm-10">@_product.Name</dd>
             <dt class="col-sm-2">Description</dt>
-            <dd class="col-sm-10">@product.Description</dd>
+            <dd class="col-sm-10">@_product.Description</dd>
             <dt class="col-sm-2">Price</dt>
-            <dd class="col-sm-10">@product.Price</dd>
-            <dt class="col-sm-2">FinalPrice</dt>
-            <dd class="col-sm-10">@product.FinalPrice</dd>
+            <dd class="col-sm-10">@_product.Price</dd>
+            <dt class="col-sm-2">Final Price</dt>
+            <dd class="col-sm-10">@_product.FinalPrice</dd>
             <dt class="col-sm-2">Stock</dt>
-            <dd class="col-sm-10">@product.Stock</dd>
-            <dt class="col-sm-2">ImageData</dt>
-            <dd class="col-sm-10">@product.ImageData</dd>
+            <dd class="col-sm-10">@_product.Stock</dd>
+            <dt class="col-sm-2">Image</dt>
+            <dd class="col-sm-10">@_product.Image</dd>
         </dl>
         <div>
-            <a href="@($"/products/edit?id={product.Id}")">Edit</a> |
+            <a href="@($"/products/edit?id={_product.Id}")">Edit</a> |
             <a href="@($"/products")">Back to List</a>
         </div>
     }
 </div>
 
 @code {
-    private Product? product;
+    private Product? _product;
 
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
-        product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
 
-        if (product is null)
+        if (_product is null)
         {
             NavigationManager.NavigateTo("notfound");
+            return;
         }
+
+        _product.Supplier = await UserManager.FindByIdAsync(_product.SupplierId);
     }
 }

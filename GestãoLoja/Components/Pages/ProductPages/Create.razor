@@ -1,100 +1,121 @@
 ﻿@page "/products/create"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using MyMedia.Domain.Entities
-@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
-@inject NavigationManager NavigationManager
+@using MyMedia.Domain.Entities.enums
+@using MyMedia.Infrastructure
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Nav
 
-<PageTitle>Create</PageTitle>
+<PageTitle>Create Product</PageTitle>
 
-<h1>Create</h1>
+<h1>Create Product</h1>
 
-<h2>Product</h2>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm method="post" Model="Product" OnValidSubmit="AddProduct" FormName="create" Enhance>
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="supplierid" class="form-label">SupplierId:</label> 
-                <InputText id="supplierid" @bind-Value="Product.SupplierId" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Product.SupplierId" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="name" class="form-label">Name:</label> 
-                <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Product.Name" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <label for="description" class="form-label">Description:</label> 
-                <InputText id="description" @bind-Value="Product.Description" class="form-control" /> 
-                <ValidationMessage For="() => Product.Description" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="price" class="form-label">Price:</label> 
-                <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Product.Price" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="finalprice" class="form-label">FinalPrice:</label> 
-                <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Product.FinalPrice" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="stock" class="form-label">Stock:</label> 
-                <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Product.Stock" class="text-danger" /> 
-            </div>        
-            <div class="mb-3">
-                <label for="imagedata" class="form-label">ImageData:</label> 
-                @* <InputText id="imagedata" @bind-Value="Product.ImageData" class="form-control" />  *@
-                @* <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/> *@
-                @if (previewUrl is not null)
-                {
-                    <img src="@previewUrl" style="max-width: 200px; margin-top: 10px;"/>
-                }
-                <ValidationMessage For="() => Product.ImageData" class="text-danger" /> 
-            </div>        
-            <button type="submit" class="btn btn-primary">Create</button>
-        </EditForm>
+<hr/>
+<div class="container mb-4">
+    <div class="row justify-content-center">
+        <div class="col-md-4 col-lg-6">
+            <EditForm method="post" Model="Product" OnValidSubmit="AddProduct" FormName="create" Enhance>
+                <DataAnnotationsValidator/>
+                <ValidationSummary class="text-danger" role="alert"/>
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label for="supplierid" class="form-label">Supplier:</label>
+                    <InputSelect id="supplierid" @bind-Value="Product.SupplierId" class="form-select">
+                        <option value="">-- select --</option>
+                        @foreach (var supplier in _suppliers)
+                        {
+                            <option value="@supplier.Id">@supplier.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => Product.SupplierId" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Name" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <InputText id="description" @bind-Value="Product.Description" class="form-control"/>
+                    <ValidationMessage For="() => Product.Description" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label for="price" class="form-label">Price:</label>
+                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Price" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label for="finalprice" class="form-label">FinalPrice:</label>
+                    <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control"
+                                 aria-required="true"/>
+                    <ValidationMessage For="() => Product.FinalPrice" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <span class="text-danger">*</span>
+                    <label for="stock" class="form-label">Stock:</label>
+                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => Product.Stock" class="text-danger"/>
+                </div>
+                <div class="mb-3">
+                    <label for="imagedata" class="form-label">ImageData:</label>
+                    <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
+                    @if (_previewUrl is not null)
+                    {
+                        <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
+                    }
+                    <ValidationMessage For="() => Product.ImageData" class="text-danger"/>
+                </div>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                    <a class="btn btn-secondary" href="/products">Back to List</a>
+                </div>
+            </EditForm>
+        </div>
     </div>
 </div>
 
-<div>
-    <a href="/products">Back to List</a>
-</div>
-
 @code {
-    [SupplyParameterFromForm]
-    private Product Product { get; set; } = new();
+    [SupplyParameterFromForm] private Product Product { get; set; } = new();
+    private List<ApplicationUser> _suppliers = new();
 
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _suppliers = await context.Users.Where(u => u.ClientType == UserType.Supplier).ToListAsync();
+    }
+
     private async Task AddProduct()
     {
-        using var context = DbFactory.CreateDbContext();
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        // var user = await UserManager.GetUserAsync(
+        //     (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User);
+        // Product.SupplierId = user!.Id;
+
         context.Products.Add(Product);
         await context.SaveChangesAsync();
-        NavigationManager.NavigateTo("/products");
+
+        Nav.NavigateTo("/products");
     }
-    
-    private string? previewUrl;
+
+    private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
         var file = e.File;
         using var stream = new MemoryStream();
         await file.OpenReadStream().CopyToAsync(stream);
-        // Product.Image = stream.ToArray(); //Only saves bytes
+        Product.ImageData = stream.ToArray(); //Only saves bytes
 
         //Creates pre visualization
         using var previewStream = new MemoryStream();
         await file.OpenReadStream().CopyToAsync(previewStream);
         var base64 = Convert.ToBase64String(previewStream.ToArray());
-        previewUrl = $"data:{file.ContentType};base64,{base64}";
+        _previewUrl = $"data:{file.ContentType};base64,{base64}";
     }
 }

@@ -1,4 +1,4 @@
-﻿@page "/users/details"
+﻿@page "/admin/users/details"
 @attribute [Authorize(Roles = "Admin, Worker")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
@@ -8,7 +8,7 @@
 
 <PageTitle>User Details</PageTitle>
 
-@if (user is null)
+@if (_user is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -19,82 +19,80 @@ else
         <div class="card">
             <div class="card-body">
                 <div class="row">
-                    @* <DetailsPageLayout Title="User Details"  *@
-                    @*                    PrimaryButtonLink="@($"/users/edit?id={user?.Id}")"  *@
-                    @*                    SecondaryButtonLink="/users"> *@
-                    <h2 class="card-title">@user.UserName</h2>
+                    <h2 class="card-title">@_user.Name @_user.Surname</h2>
                     <hr/>
-                    <div class="col-md-8">
-                        <dl class="row">
-                            @* <DetailItem Label="Email" Value="@user.Email" /> *@
-                            @* <DetailItem Label="Phone Number" Value="@user.PhoneNumber" /> *@
-                            @* <DetailItem Label="NIF" Value="@user.NIF" /> *@
-                            <h3>Products</h3>
-                            <hr/>
-                            @* @if (user.CartProducts != null && user.CartProducts.Any()) *@
-                            @* { *@
-                            @*     <div class="d-flex flex-wrap"> *@
-                            @*         @foreach (var cartProduct in user.CartProducts) *@
-                            @*         { *@
-                            @*             <a class="text-decoration-none" *@
-                            @*                href="@($"/products/details?id={cartProduct.ProductId}")"> *@
-                            @*                 <Card Title="@($"{@cartProduct.Product.Name} x {cartProduct.Quantity}")" *@
-                            @*                       ImageData="@cartProduct.Product.ImageData" Border="true"/> *@
-                            @*             </a> *@
-                            @*         } *@
-                            @*     </div> *@
-                            @* } *@
-                            @* else *@
-                            @* { *@
-                            @*     <p>This user has no products in the cart.</p> *@
-                            @* } *@
-                        </dl>
-                    </div>
-                    <div class="text-center mt-4">
-                        @* @if (IsDelete) *@
-                        @* { *@
-                        @*     <EditForm method="post" Model="@FormModel"  *@
-                        @*               OnValidSubmit="@Callback" FormName="delete" *@
-                        @*               Enhance> *@
-                        @*         <FormButton Label="Delete" Type="danger"/> *@
-                        @*         <LinkButton Label="Back To List" Link="@SecondaryButtonLink"/> *@
-                        @*     </EditForm> *@
-                        @* } *@
-                        @* else *@
-                        @* { *@
-                        @*     <LinkButton Label="Edit" Link="@PrimaryButtonLink" Type="primary"/> *@
-                        @*     <LinkButton Label="Back To List" Link="@SecondaryButtonLink"/> *@
-                        @* } *@
+                    <div class="col-md-4">
+                        <div class="d-flex justify-content-center">
+                            @if (_user.ImageData is { Length: > 0 })
+                            {
+                                <img src="@($"data:image/png;base64,{Convert.ToBase64String(_user.ImageData)}")"
+                                     alt="User image"
+                                     class="img-fluid" style="max-width: 50px;"/>
+                            }
+                        </div>
                     </div>
                 </div>
+                <div class="col-md-8">
+                    <dl class="row">
+                        <dt class="col-sm-3">Email</dt>
+                        <dd class="col-sm-9">@_user.Email</dd>
+                        <dt class="col-sm-3">Phone Number</dt>
+                        <dd class="col-sm-9">@_user.PhoneNumber</dd>
+                        @if (_user.Nif is not null)
+                        {
+                            <dt class="col-sm-3">NIF</dt>
+                            <dd class="col-sm-9">@_user.Nif</dd>
+                        }
+                    </dl>
+                    <dl class="row">
+                        <h3>Products</h3>
+                        <hr/>
+                        @if (_user.Orders.Any())
+                        {
+                            @* <div class="d-flex flex-wrap"> *@
+                            @*     @foreach (var order in _user.Orders) *@
+                            @*     { *@
+                            @*         <a class="text-decoration-none" *@
+                            @*            href="@($"/products/details?id={order.}")"> *@
+                            @*             <Card Title="@($"{@order.Name} x {}")" *@
+                            @*                   ImageData="@cartProduct.Product.ImageData" Border="true"/> *@
+                            @*         </a> *@
+                            @*     } *@
+                            @* </div> *@
+                        }
+                        else
+                        {
+                            <p>This user has no products in the cart.</p>
+                        }
+                    </dl>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="@($"/admin/users/edit?id={_user?.Id}")" class="btn btn-primary">Edit</a>
+                    <a href="@($"/admin/users")" class="btn btn-secondary">Back to List</a>
+                </div>
             </div>
-        </div>
-        >
-
-        <div class="col-md-4">
-            @* <ImageDisplay ImageData="@user.ImageData" /> *@
         </div>
     </div>
 }
 
 @code {
-    private ApplicationUser? user;
-    private bool IsDelete { get; set; } = false;
+    private ApplicationUser? _user;
 
     [SupplyParameterFromQuery] private string Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _user = await context.Users.FirstOrDefaultAsync(u => u.Id == Id);
+        if (_user is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
         // user = await context.Users
         //     .Include(user => user.CartProducts)
         //     .ThenInclude(cartProduct => cartProduct.Product)
         //     .FirstOrDefaultAsync(m => m.Id == Id);
-
-        if (user is null)
-        {
-            NavigationManager.NavigateTo("notfound");
-        }
     }
 
 }

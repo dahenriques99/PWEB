@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using MyMedia.Domain.Entities.enums;
 
 namespace MyMedia.Infrastructure;
 
@@ -27,6 +28,8 @@ public static class Initialization
             Surname = "Local",
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
+            Status = UserStatus.Active,
+            ClientType = UserType.Client
         };
         if (userManager.Users.All(u => u.Id != defaultUser.Id))
         {

@@ -1,15 +1,19 @@
-﻿@page "/users/edit"
-@attribute [Authorize(Roles = "Admin, Worker")]
+﻿@page "/admin/users/edit"
+@attribute [Authorize(Roles = "Admin")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
-@inject NavigationManager NavigationManager
+@inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
 <PageTitle>Edit User</PageTitle>
+
+<h1>Edit User</h1>
 
 @if (User is null)
 {
@@ -27,35 +31,71 @@ else
                     <DataAnnotationsValidator/>
                     <ValidationSummary class="text-danger" role="alert"/>
                     <input type="hidden" name="User.Id" value="@User.Id"/>
-                    @* <StringInput Label="User Name" @bind-Value="User.UserName" Validation="@(() => User.UserName)" /> *@
-                    @* <StringInput Label="User Email" @bind-Value="User.Email" Validation="@(() => User.Email)" /> *@
-                    @* <StringInput Label="User Phone Number" @bind-Value="User.PhoneNumber" Validation="@(() => User.PhoneNumber)" /> *@
-                    @* <ImageUpload Label="User Logo" ValidationFor="@(() => User.ImageData)" OnImageSelectedCallback="HandleLogoSelected" InitialImageData="User.ImageData"/> *@
+                    <div class="mb-3">
+                        <span class="text-danger">*</span>
+                        <label for="clienttype" class="form-label">Supplier:</label>
+                        <InputSelect id="clienttype" @bind-Value="User.ClientType" class="form-select">
+                            <option value="">-- select --</option>
+                            @foreach (UserType type in Enum.GetValues(typeof(UserType)))
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => User.ClientType" class="text-danger"/>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-danger">*</span>
+                        <label for="name" class="form-label">Name:</label>
+                        <InputText id="name" @bind-Value="User.Name" class="form-control" aria-required="true"/>
+                        <ValidationMessage For="() => User.Name" class="text-danger"/>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-danger">*</span>
+                        <label for="surname" class="form-label">Surname:</label>
+                        <InputText id="surname" @bind-Value="User.Surname" class="form-control" aria-required="true"/>
+                        <ValidationMessage For="() => User.Surname" class="text-danger"/>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-danger">*</span>
+                        <label for="email" class="form-label">Email:</label>
+                        <InputText id="email" @bind-Value="User.Email" class="form-control" aria-required="true"/>
+                        <ValidationMessage For="() => User.Email" class="text-danger"/>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-danger">*</span>
+                        <label for="imagedata" class="form-label">Image:</label>
+                        <InputFile id="imagedata" OnChange="OnImageChange" class="form-control"
+                                   accept=".png, .jpg, .jpeg"/>
+                        @if (_previewUrl is not null)
+                        {
+                            <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
+                        }
+                        <ValidationMessage For="() => User.ImageData" class="text-danger"/>
+                    </div>
 
                     <label class="form-label">Roles:</label>
-                    @if (IsAdmin)
-                    {
-                        <div class="d-flex flex-wrap gap-3">
-                            @foreach (var role in Roles)
-                            {
-                                <div class="form-check me-3">
-                                    <input class="form-check-input" type="checkbox" id="role-@role.Id"
-                                           @bind="role.IsSelected"/>
-                                    <label class="form-check-label" for="role-@role.Id">
-                                        @role.Name
-                                    </label>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <p>You do not have permission to modify roles.</p>
-                    }
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var role in Roles)
+                        {
+                            <div class="form-check me-3">
+                                <InputCheckbox @bind-Value="role.IsSelected"
+                                               class="form-check-input"/>
+                                <label>@role.Name.ToString()</label>
+                                @* <input class="form-check-input" type="checkbox" *@
+                                @*        id="role-@role.Name" *@
+                                @*        @bind="role.IsSelected"/> *@
+                                @* <label class="form-check-label" for="role-@role.Name"> *@
+                                @*     @role.Name *@
+                                @* </label> *@
+                            </div>
+                        }
+                    </div>
 
                     <div class="text-center mt-4">
-                        <FormButton Label="Submit"/>
-                        <LinkButton Label="Back To List" Link="/users"/>
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <a href="/admin/users" class="btn btn-secondary">Back To List</a>
+                        </div>
                     </div>
                 </EditForm>
             </div>
@@ -63,57 +103,70 @@ else
     </div>
 }
 
-<div>
-    <a href="/users">Back to List</a>
-</div>
-
 @code {
     [SupplyParameterFromQuery] private string Id { get; set; }
 
     private ApplicationUser? User { get; set; }
 
-    private List<RoleSelectionModel> Roles { get; set; } = new();
-
-    private bool IsAdmin { get; set; }
+    private List<RoleSelectionModel> Roles { get; } = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Load the user by Id
-        User = await UserManager.FindByIdAsync(Id);
+        await using var context = await DbFactory.CreateDbContextAsync();
+        User = await context.Users.FindAsync(Id);
         if (User is null)
         {
-            NavigationManager.NavigateTo("notfound");
+            Nav.NavigateTo("notfound");
             return;
         }
 
-        // Get the current logged-in user's roles
-        var currentUser = await UserManager.GetUserAsync((await AuthenticationStateProvider.GetAuthenticationStateAsync()).User);
-        var currentUserRoles = await UserManager.GetRolesAsync(currentUser); // Renamed from 'userRoles' to 'currentUserRoles'
-        IsAdmin = currentUserRoles.Contains("Admin");
-
-        // Get all roles from the RoleManager
-        var allRoles = await RoleManager.Roles.ToListAsync();
-
         // Get the user's current roles
-        var userRoles = await UserManager.GetRolesAsync(User); // This is for the user being edited
+        var userRoles = await UserManager.GetRolesAsync(User);
 
         // Prepare the list of role models
-        Roles = allRoles.Select(role => new RoleSelectionModel
+        foreach (UserRole role in Enum.GetValues(typeof(UserRole)))
         {
-            Id = role.Id,
-            Name = role.Name,
-            IsSelected = userRoles.Contains(role.Name)
-        }).ToList();
+            var r = role switch
+            {
+                UserRole.Client => "Cliente",
+                UserRole.Manager => "Gestor",
+                _ => role.ToString()
+            };
+            Roles.Add(new RoleSelectionModel
+            {
+                Name = role,
+                IsSelected = userRoles.Contains(r)
+            });
+        }
     }
 
     private async Task UpdateUser()
     {
-        // First, update the user details
+        // await using var context = await DbFactory.CreateDbContextAsync();
+        //
+        // context.Attach(User!).State = EntityState.Modified;
+        
+        // try
+        // {
+        //     await context.SaveChangesAsync();
+        // }
+        // catch (DbUpdateConcurrencyException)
+        // {
+        //     if (!UserExists(User!.Id))
+        //     {
+        //         Nav.NavigateTo("notfound");
+        //     }
+        //     else
+        //     {
+        //         throw;
+        //     }
+        // }
         var user = await UserManager.FindByIdAsync(User.Id);
         if (user == null) return;
 
-        user.UserName = User.UserName;
+        user.Name = User.Name;
         user.Email = User.Email;
+        user.UserName = User.Email;
         user.PhoneNumber = User.PhoneNumber;
 
         var result = await UserManager.UpdateAsync(user);
@@ -124,32 +177,70 @@ else
         }
 
         // Get the user's current roles
-        var userRoles = await UserManager.GetRolesAsync(user);
-
-        // Remove the user from roles that are no longer selected
-        var rolesToRemove = userRoles.Except(Roles.Where(r => r.IsSelected).Select(r => r.Name)).ToList();
-        await UserManager.RemoveFromRolesAsync(user, rolesToRemove);
-
-        // Add the user to new roles
-        var rolesToAdd = Roles.Where(r => r.IsSelected).Select(r => r.Name).Except(userRoles).ToList();
-        await UserManager.AddToRolesAsync(user, rolesToAdd);
+        var userRoles = await UserManager.GetRolesAsync(User!);
+        var rolesToRemove = userRoles.Except(
+            Roles
+                .Where(r => r.IsSelected)
+                .Select(r =>
+                {
+                    //Name fixing for now
+                    //TODO use roles as UserRole
+                    return r.Name switch
+                    {
+                        UserRole.Client => "Cliente",
+                        UserRole.Manager => "Gestor",
+                        _ => r.Name.ToString()
+                    };
+                })
+        ).ToList();
+        await UserManager.RemoveFromRolesAsync(user!, rolesToRemove);
+        
+        var rolesToAdd = Roles
+            .Where(r => r.IsSelected)
+            .Select(r =>
+            {
+                //Name fixing for now
+                //TODO use roles as UserRole
+                return r.Name switch
+                {
+                    UserRole.Client => "Cliente",
+                    UserRole.Manager => "Gestor",
+                    _ => r.Name.ToString()
+                };
+            })
+            .Except(userRoles)
+            .ToList();
+        await UserManager.AddToRolesAsync(user!, rolesToAdd);
 
         // Redirect to users list after saving
-        NavigationManager.NavigateTo("/users");
+        Nav.NavigateTo("/admin/users");
     }
 
-    private void HandleLogoSelected(byte[] imageData)
+    private bool UserExists(string id)
     {
-        if (User is not null)
-        {
-            // User.ImageData = imageData;
-        }
+        using var context = DbFactory.CreateDbContext();
+        return context.Products.Any(e => e.Id.Equals(id));
+    }
+
+    private string? _previewUrl;
+
+    private async Task OnImageChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var stream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(stream);
+        User.ImageData = stream.ToArray(); //Only saves bytes
+
+        //Creates pre visualization
+        using var previewStream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(previewStream);
+        var base64 = Convert.ToBase64String(previewStream.ToArray());
+        _previewUrl = $"data:{file.ContentType};base64,{base64}";
     }
 
     public class RoleSelectionModel
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public UserRole Name { get; set; }
         public bool IsSelected { get; set; }
     }
 

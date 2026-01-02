@@ -1,29 +1,42 @@
 ﻿@page "/products"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using MyMedia.Domain.Entities
 @using MyMedia.Infrastructure
 @implements IAsyncDisposable
-@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Products</PageTitle>
 
-<h1>Index</h1>
+<h1>Products</h1>
 
 <p>
-    <a href="products/create">Create New</a>
+    <a href="products/create" class="btn btn-primary">Create New</a>
 </p>
 
-<QuickGrid Class="table" Items="context.Products">
-    <PropertyColumn Property="product => product.SupplierId" />
-    <PropertyColumn Property="product => product.Name" />
-    <PropertyColumn Property="product => product.Description" />
-    <PropertyColumn Property="product => product.Price" />
-    <PropertyColumn Property="product => product.FinalPrice" />
-    <PropertyColumn Property="product => product.Stock" />
-    <PropertyColumn Property="product => product.ImageData" />
+<QuickGrid Class="table" Items="_context.Products">
+    @* <PropertyColumn Property="p => p.SupplierId" /> *@
+    <PropertyColumn Property="p => p.Name"/>
+    <PropertyColumn Property="p => p.Description"/>
+    <PropertyColumn Property="p => p.Price"/>
+    <PropertyColumn Property="p => p.FinalPrice"/>
+    <PropertyColumn Property="p => p.Stock"/>
 
-    <TemplateColumn Context="product">
+    <TemplateColumn Title="Image">
+        @if (context.ImageData is null)
+        {
+            <span>No image</span>
+        }
+        else
+        {
+            <img alt="" src="@($"data:image/png;base64,{Convert.ToBase64String(context.ImageData!)}")"
+                 width="60"/>
+        }
+    </TemplateColumn>
+
+    <TemplateColumn Title="Actions" Context="product">
         <a href="@($"products/edit?id={product.Id}")">Edit</a> |
         <a href="@($"products/details?id={product.Id}")">Details</a> |
         <a href="@($"products/delete?id={product.Id}")">Delete</a>
@@ -31,12 +44,21 @@
 </QuickGrid>
 
 @code {
-    private ApplicationDbContext context = default!;
+    private ApplicationDbContext _context = default!;
+    private List<Product> _products = new();
 
-    protected override void OnInitialized()
+    protected override async void OnInitialized()
     {
-        context = DbFactory.CreateDbContext();
+        try
+        {
+            _context = await DbFactory.CreateDbContextAsync();
+            // _products = await _context.Products.ToListAsync();
+        }
+        catch (Exception e)
+        {
+            throw; // TODO handle exception
+        }
     }
 
-    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 }

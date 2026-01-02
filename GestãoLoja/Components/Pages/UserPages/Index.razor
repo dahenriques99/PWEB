@@ -1,22 +1,16 @@
-﻿@page "/users"
+﻿@page "/admin/users"
 @attribute [Authorize(Roles = "Admin, Worker")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Identity
+@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
+@using UserStatus = MyMedia.Infrastructure.UserStatus
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject UserManager<ApplicationUser> UserManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@implements IAsyncDisposable
 
-<PageTitle>Users</PageTitle>
+<PageTitle>User Management</PageTitle>
 
-<h1>Users</h1>
-
-<p>
-    <a href="users/create">Create New</a>
-</p>
+<h1>User Management</h1>
 
 <!-- Filter by Role Dropdown -->
 <div class="row mb-3">
@@ -24,31 +18,47 @@
         <label for="roleFilter" class="form-label">Filter by Role:</label>
         <InputSelect id="roleFilter" @bind-Value="_selectedRole" class="form-select">
             <option value="">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Worker">Worker</option>
-            <option value="Client">Client</option>
-            <option value="NoRole">No Role</option> <!-- For users with no role -->
+            @foreach (var role in Enum.GetValues(typeof(UserRole)))
+            {
+                <option value="@role">@role</option>
+            }
         </InputSelect>
     </div>
 </div>
 
-<!-- Filter by Email Confirmation Status -->
+<!-- Filter by Status -->
 <div class="row mb-3">
     <div class="col-md-4">
         <label for="statusFilter" class="form-label">Filter by Status:</label>
         <InputSelect id="statusFilter" @bind-Value="_selectedStatus" class="form-select">
-            <option value="">All Statuses</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Pending">Pending</option>
+            <option value="">All Status</option>
+            @foreach (var status in Enum.GetValues(typeof(UserStatus)))
+            {
+                <option value="@status">@status</option>
+            }
         </InputSelect>
     </div>
 </div>
 
-<QuickGrid Class="table" Items="_context?.Users">
-    <PropertyColumn Property="user => user.UserName" Title="Name" Sortable="true" />
-    <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true" />
+<!-- Filter by Client Type -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label for="typeFilter" class="form-label">Filter by Client Type:</label>
+        <InputSelect id="typeFilter" @bind-Value="_selectedType" class="form-select">
+            <option value="">All Types</option>
+            @foreach (var type in Enum.GetValues(typeof(UserType)))
+            {
+                <option value="@type">@type</option>
+            }
+        </InputSelect>
+    </div>
+</div>
 
-    <!-- Roles Column -->
+<QuickGrid Class="table" Items="FilteredUsers">
+    <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
+    <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
+    <PropertyColumn Property="user => user.ClientType" Title="Client Type" Sortable="true"></PropertyColumn>
+
     <TemplateColumn Context="user" Title="Roles">
         @foreach (var role in GetUserRoles(user))
         {
@@ -57,88 +67,93 @@
     </TemplateColumn>
 
     <TemplateColumn Context="user" Title="Status">
-        @if (user.EmailConfirmed)
+        @if (user.Status == UserStatus.Active)
         {
-            <span class="badge bg-success">Confirmed</span>
+            <span class="badge bg-success">Active</span>
         }
         else
         {
             <span class="badge bg-warning">Pending</span>
-            @if (_isAdmin)
-            {
-                <button class="btn btn-sm btn-primary ms-2" @onclick="() => ConfirmClient(user)">Confirm Client</button>
-            }
+            <button class="btn btn-sm btn-primary ms-2" @onclick="() => ConfirmUser(user)">
+                Activate
+            </button>
         }
     </TemplateColumn>
-
-    <TemplateColumn Context="user" Title="Image">
-        @* <ImageDisplay ImageData="@user.ImageData" Type="tiny" /> *@
-    </TemplateColumn>
-
-    <TemplateColumn Context="user">
-        <a href="@($"users/edit?id={user.Id}")" class="btn">Edit</a>
-        <a href="@($"users/edit?id={user.Id}")" class="btn">Details</a>
-        <a href="@($"users/edit?id={user.Id}")" class="btn btn-danger">Delete</a>
+    
+    <TemplateColumn Title="Actions" Context="user">
+        <a href="@($"admin/users/edit?id={user.Id}")">Edit</a> |
+        <a href="@($"admin/users/details?id={user.Id}")">Details</a>
+        @* <a href="@($"products/delete?id={product.Id}")">Delete</a> *@
     </TemplateColumn>
 </QuickGrid>
 
 @code {
-    private ApplicationDbContext? _context;
-    private bool _isAdmin = false;
+    private ApplicationDbContext _context = default!;
+
     private string? _selectedRole; // Selected role from dropdown
     private string? _selectedStatus; // Selected email confirmation status from dropdown
-    
-    List<ApplicationUser>? users;
-    Dictionary<string, List<String>> usersWithRoles = new();
+    private string? _selectedType;
+    private IQueryable<ApplicationUser> FilteredUsers => FilterUsers();
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-
-        await LoadData();
         // Create a new DbContext instance for this page
         _context = await DbContextFactory.CreateDbContextAsync();
-
-        // Get the current logged-in user's roles
-        var currentUser = await UserManager.GetUserAsync((await AuthenticationStateProvider.GetAuthenticationStateAsync()).User);
-        var currentUserRoles = await UserManager.GetRolesAsync(currentUser);
-        _isAdmin = currentUserRoles.Contains("Admin");
-        
-        await _context.SaveChangesAsync(); // Add this for correct async behavior
     }
 
-    private async Task LoadData()
+    private IQueryable<ApplicationUser> FilterUsers()
     {
-        users = UserManager.Users.ToList();
+        var query = _context.Users.AsQueryable();
 
-        foreach (var user in users)
+        //Admin, 
+        if (!string.IsNullOrEmpty(_selectedRole))
         {
-            var userRoles = await UserManager.GetRolesAsync(user);
-            usersWithRoles[user.Id] = userRoles.ToList();
+            //Name fixing for now
+            //TODO pass roles to use the UserRoles enum
+            _selectedRole = _selectedRole switch
+            {
+                nameof(UserRole.Manager) => "Gestor",
+                nameof(UserRole.Client) => "Cliente",
+                _ => _selectedRole
+            };
+            
+            query = query.Where(u => _context.UserRoles
+                .Where(ur => ur.UserId == u.Id)
+                .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                .Contains(_selectedRole));
         }
+
+        if (!string.IsNullOrEmpty(_selectedStatus))
+        {
+            query = _selectedStatus switch
+            {
+                nameof(UserStatus.Pending) => query.Where(u => u.Status == UserStatus.Pending),
+                nameof(UserStatus.Active) => query.Where(u => u.Status == UserStatus.Active),
+                _ => query
+            };
+        }
+
+        if (!string.IsNullOrEmpty(_selectedType))
+        {
+            query = _selectedType switch
+            {
+                nameof(UserType.Client) => query.Where(u => u.ClientType == UserType.Client),
+                nameof(UserType.Supplier) => query.Where(u => u.ClientType == UserType.Supplier),
+                _ => query
+            };
+        }
+
+        return query;
     }
 
-    // Get the roles for a specific user
-    private List<string?> GetUserRoles(ApplicationUser user)
-    {
-        using var newContext = DbContextFactory.CreateDbContext();
-        
-        return newContext.UserRoles
-            .Where(ur => ur.UserId == user.Id)
-            .Join(newContext.Roles,
-                ur => ur.RoleId,
-                r => r.Id, 
-                (ur, r) => r.Name)
-            .ToList(); // Fetch roles as a list of role names
-    }
 
-    private async Task ConfirmClient(ApplicationUser user)
+    private async Task ConfirmUser(ApplicationUser user)
     {
         try
         {
             await using var newContext = await DbContextFactory.CreateDbContextAsync();
             // Set email confirmed status
-            user.EmailConfirmed = true;
+            user.Status = UserStatus.Active;
 
             // Update the user in the database
             newContext.Users.Update(user);
@@ -154,9 +169,13 @@
         }
     }
 
-    public async ValueTask DisposeAsync()
+    private List<string?> GetUserRoles(ApplicationUser user)
     {
-        if (_context != null) await _context.DisposeAsync();
+        using var newContext = DbContextFactory.CreateDbContext();
+        return newContext.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Join(newContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+            .ToList(); // Fetch roles as a list of role names
     }
 
 }
