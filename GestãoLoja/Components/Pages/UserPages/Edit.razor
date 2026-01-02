@@ -129,7 +129,7 @@ else
             var r = role switch
             {
                 UserRole.Client => "Cliente",
-                UserRole.Manager => "Gestor",
+                UserRole.Supplier => "Gestor",
                 _ => role.ToString()
             };
             Roles.Add(new RoleSelectionModel
@@ -188,7 +188,7 @@ else
                     return r.Name switch
                     {
                         UserRole.Client => "Cliente",
-                        UserRole.Manager => "Gestor",
+                        UserRole.Supplier => "Gestor",
                         _ => r.Name.ToString()
                     };
                 })
@@ -204,7 +204,7 @@ else
                 return r.Name switch
                 {
                     UserRole.Client => "Cliente",
-                    UserRole.Manager => "Gestor",
+                    UserRole.Supplier => "Gestor",
                     _ => r.Name.ToString()
                 };
             })

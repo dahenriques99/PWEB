@@ -9,11 +9,9 @@ public static class Initialization
         UserManager<ApplicationUser> userManager, 
         RoleManager<IdentityRole> roleManager)
     {
-        // Add default Roles
-        string[] roles = ["Admin", "Worker", "Gestor", "Cliente"];
-
-        foreach (var role in roles)
+        foreach (UserRole userRole in Enum.GetValues(typeof(UserRole)))
         {
+            var role = userRole.ToString();
             if (await roleManager.RoleExistsAsync(role)) continue;
             var roleRole = new IdentityRole(role);
             await roleManager.CreateAsync(roleRole);

@@ -2,5 +2,5 @@
 
 public enum UserRole
 {
-    Admin, Worker, Manager, Client 
+    Admin, Employee, Supplier, Client 
 }
