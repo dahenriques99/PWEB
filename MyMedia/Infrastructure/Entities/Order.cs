@@ -1,7 +1,5 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using MyMedia.Infrastructure;
-using MyMedia.Infrastructure.Entities.enums;
 using System.Text.Json.Serialization;
 using MyMedia.Infrastructure.Entities.enums;
 
@@ -19,13 +17,14 @@ public class Order
 
     public decimal TotalAmount { get; set; }
 
-    public OrderStatus Status { get; set; } = OrderStatus.InCart;
+    public OrderStatus Status { get; set; }
 
-    public DateTime Date { get; set; } = DateTime.UtcNow;
+    public DateTime Date { get; set; } = DateTime.Now;
     
-    public int DeliveryId { get; set; }
+    [JsonIgnore]
+    public int DeliveryModeId { get; set; }
 
-    public DeliveryMode? DeliveryMode { get; set; }
+    public DeliveryMode DeliveryMode { get; set; }
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }
