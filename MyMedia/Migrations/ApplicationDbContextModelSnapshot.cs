@@ -15,6 +15,7 @@ namespace MyMedia.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
+#pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -317,13 +318,11 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("DeliveryId")
-                        .IsRequired()
+                    b.Property<int>("DeliveryModeId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
@@ -334,7 +333,7 @@ namespace MyMedia.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryId");
+                    b.HasIndex("DeliveryModeId");
 
                     b.HasIndex("UserId");
 
@@ -363,21 +362,6 @@ namespace MyMedia.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems");
-                });
-            
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
-                {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ProductId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("ProductCategories");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
@@ -503,7 +487,7 @@ namespace MyMedia.Migrations
                 {
                     b.HasOne("MyMedia.Infrastructure.Entities.DeliveryMode", "DeliveryMode")
                         .WithMany("Orders")
-                        .HasForeignKey("DeliveryId")
+                        .HasForeignKey("DeliveryModeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -597,6 +581,7 @@ namespace MyMedia.Migrations
 
                     b.Navigation("ProductCategories");
                 });
+#pragma warning restore 612, 618
         }
     }
 }

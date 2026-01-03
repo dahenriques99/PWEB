@@ -54,7 +54,9 @@
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        _category = await context.Categories.FirstOrDefaultAsync(m => m.Id == Id);
+        _category = await context.Categories
+            .Include(c => c.SubCategories)
+            .FirstOrDefaultAsync(m => m.Id == Id);
 
         if (_category is null)
         {
