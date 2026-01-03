@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
 
@@ -16,13 +17,12 @@ public class Order
 
     public decimal TotalAmount { get; set; }
 
-    public string Status { get; set; } = "Pending";
+    public OrderStatus Status { get; set; }
 
     public DateTime Date { get; set; } = DateTime.Now;
     
     [JsonIgnore]
-    [DefaultValue("Store Pickup")]
-    public int? DeliveryId { get; set; }
+    public int DeliveryModeId { get; set; }
 
     public DeliveryMode DeliveryMode { get; set; }
 
