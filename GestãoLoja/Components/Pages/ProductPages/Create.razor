@@ -62,11 +62,15 @@
                     <ValidationMessage For="() => Product.Stock" class="text-danger"/>
                 </div>
                 <div class="mb-3">
-                    <label for="imagedata" class="form-label">ImageData:</label>
+                    <label for="imagedata" class="form-label">Image:</label>
                     <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
                     @if (_previewUrl is not null)
                     {
                         <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
+                    }
+                    else
+                    {
+                        <p>No image selected</p>
                     }
                     <ValidationMessage For="() => Product.ImageData" class="text-danger"/>
                 </div>
@@ -86,7 +90,12 @@
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        _suppliers = await context.Users.Where(u => u.ClientType == UserType.Supplier).ToListAsync();
+        var query = context.Users.AsQueryable();
+        _suppliers = query.Where(u => context.UserRoles
+            .Where(ur => ur.UserId == u.Id)
+            .Join(context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+            .Contains(nameof(UserRole.Supplier)))
+            .ToList();
     }
 
     private async Task AddProduct()
@@ -103,19 +112,34 @@
         Nav.NavigateTo("/products");
     }
 
-    private string? _previewUrl;
+    private string? _previewUrl = null;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
+        // var file = e.File;
+        // using var stream = new MemoryStream();
+        // await file.OpenReadStream().CopyToAsync(stream);
+        // Product.ImageData = stream.ToArray(); //Only saves bytes
+        //
+        // //Creates pre visualization
+        // using var previewStream = new MemoryStream();
+        // await file.OpenReadStream().CopyToAsync(previewStream);
+        // var base64 = Convert.ToBase64String(previewStream.ToArray());
+        // _previewUrl = $"data:{file.ContentType};base64,{base64}";
         var file = e.File;
-        using var stream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(stream);
-        Product.ImageData = stream.ToArray(); //Only saves bytes
 
-        //Creates pre visualization
-        using var previewStream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(previewStream);
-        var base64 = Convert.ToBase64String(previewStream.ToArray());
+        using var stream = file.OpenReadStream();
+        using var ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        var bytes = ms.ToArray();
+
+        // Save to entity
+        Product.ImageData = bytes;
+
+        // Create preview
+        var base64 = Convert.ToBase64String(bytes);
         _previewUrl = $"data:{file.ContentType};base64,{base64}";
     }
 }
