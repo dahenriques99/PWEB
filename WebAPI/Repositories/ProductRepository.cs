@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyMedia.Domain.Entities;
 using MyMedia.Infrastructure;
+using MyMedia.Infrastructure.Entities;
 using RCL.Dtos.Request;
 
 namespace WebAPI.Repositories;

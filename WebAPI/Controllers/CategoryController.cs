@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyMedia.Domain.Entities;
+using MyMedia.Infrastructure.Entities;
 using WebAPI.Repositories;
 using WebAPI.utils;
 

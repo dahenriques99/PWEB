@@ -1,4 +1,4 @@
-﻿using MyMedia.Domain.Entities;
+﻿using MyMedia.Infrastructure.Entities;
 using RCL.Dtos.Response;
 
 namespace WebAPI.utils;

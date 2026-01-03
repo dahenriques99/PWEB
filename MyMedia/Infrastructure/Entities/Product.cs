@@ -2,8 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
 using MyMedia.Infrastructure;
-
-namespace MyMedia.Domain.Entities;
+using MyMedia.Infrastructure.Entities;
 
 public class Product
 {

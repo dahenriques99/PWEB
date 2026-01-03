@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using MyMedia.Infrastructure;
-
-namespace MyMedia.Domain.Entities;
+namespace MyMedia.Infrastructure.Entities;
 
 public class Order
 {
