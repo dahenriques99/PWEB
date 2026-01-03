@@ -4,49 +4,51 @@
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Details</PageTitle>
+<PageTitle>Order Details</PageTitle>
 
-<h1>Details</h1>
+<h1>Order Details</h1>
 
 <div>
-    <h2>Order</h2>
     <hr />
-    @if (order is null)
+    @if (_order is null)
     {
         <p><em>Loading...</em></p>
     }
     else {
         <dl class="row">
-            <dt class="col-sm-2">UserId</dt>
-            <dd class="col-sm-10">@order.UserId</dd>
-            <dt class="col-sm-2">TotalAmount</dt>
-            <dd class="col-sm-10">@order.TotalAmount</dd>
+            <dt class="col-sm-2">Client</dt>
+            <dd class="col-sm-10">@_order.User.Name</dd>
+            <dt class="col-sm-2">Total Amount</dt>
+            <dd class="col-sm-10">@_order.TotalAmount</dd>
             <dt class="col-sm-2">Status</dt>
-            <dd class="col-sm-10">@order.Status</dd>
+            <dd class="col-sm-10">@_order.Status</dd>
             <dt class="col-sm-2">Date</dt>
-            <dd class="col-sm-10">@order.Date</dd>
-            <dt class="col-sm-2">DeliveryId</dt>
-            <dd class="col-sm-10">@order.DeliveryId</dd>
+            <dd class="col-sm-10">@_order.Date</dd>
+            <dt class="col-sm-2">Delivery Mode</dt>
+            <dd class="col-sm-10">@_order.DeliveryMode?.Name</dd>
         </dl>
         <div>
-            <a href="@($"/orders/edit?id={order.Id}")">Edit</a> |
-            <a href="@($"/orders")">Back to List</a>
+            <a href="@($"/orders/edit?id={_order.Id}")" class="btn btn-primary">Edit</a>
+            <a href="@($"/orders")" class="btn btn-secondary">Back to List</a>
         </div>
     }
 </div>
 
 @code {
-    private Order? order;
+    private Order? _order;
 
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbFactory.CreateDbContext();
-        order = await context.Orders.FirstOrDefaultAsync(m => m.Id == Id);
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _order = await context.Orders
+            .Include(o => o.User)
+            .Include(o => o.DeliveryMode)
+            .FirstOrDefaultAsync(m => m.Id == Id);
 
-        if (order is null)
+        if (_order is null)
         {
             NavigationManager.NavigateTo("notfound");
         }
