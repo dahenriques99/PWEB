@@ -7,13 +7,21 @@
 namespace MyMedia.Migrations
 {
     /// <inheritdoc />
-    public partial class Setcategorydeletiontorestricted : Migration
+    public partial class Addordersanddeliverymodes : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterColumn<int>(
+                name: "Status",
+                table: "Orders",
+                type: "int",
+                nullable: false,
+                oldClrType: typeof(string),
+                oldType: "nvarchar(max)");
+
             migrationBuilder.AddColumn<int>(
-                name: "DeliveryId",
+                name: "DeliveryModeId",
                 table: "Orders",
                 type: "int",
                 nullable: false,
@@ -44,9 +52,9 @@ namespace MyMedia.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Orders_DeliveryId",
+                name: "IX_Orders_DeliveryModeId",
                 table: "Orders",
-                column: "DeliveryId");
+                column: "DeliveryModeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_ParentCategoryId",
@@ -62,9 +70,9 @@ namespace MyMedia.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Orders_DeliveryModes_DeliveryId",
+                name: "FK_Orders_DeliveryModes_DeliveryModeId",
                 table: "Orders",
-                column: "DeliveryId",
+                column: "DeliveryModeId",
                 principalTable: "DeliveryModes",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
@@ -78,14 +86,14 @@ namespace MyMedia.Migrations
                 table: "Categories");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_Orders_DeliveryModes_DeliveryId",
+                name: "FK_Orders_DeliveryModes_DeliveryModeId",
                 table: "Orders");
 
             migrationBuilder.DropTable(
                 name: "DeliveryModes");
 
             migrationBuilder.DropIndex(
-                name: "IX_Orders_DeliveryId",
+                name: "IX_Orders_DeliveryModeId",
                 table: "Orders");
 
             migrationBuilder.DropIndex(
@@ -93,8 +101,16 @@ namespace MyMedia.Migrations
                 table: "Categories");
 
             migrationBuilder.DropColumn(
-                name: "DeliveryId",
+                name: "DeliveryModeId",
                 table: "Orders");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Status",
+                table: "Orders",
+                type: "nvarchar(max)",
+                nullable: false,
+                oldClrType: typeof(int),
+                oldType: "int");
         }
     }
 }
