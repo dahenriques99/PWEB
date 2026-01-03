@@ -13,12 +13,12 @@
     <a href="orders/create" class="btn btn-primary">Create New</a>
 </p>
 
-<QuickGrid Class="table" Items="context.Orders">
+<QuickGrid Class="table" Items="_context.Orders">
     <PropertyColumn Property="order => order.UserId" />
     <PropertyColumn Property="order => order.TotalAmount" />
     <PropertyColumn Property="order => order.Status" />
     <PropertyColumn Property="order => order.Date" />
-    <PropertyColumn Property="order => order.DeliveryId" />
+    <PropertyColumn Property="order => order.DeliveryModeId" />
 
     <TemplateColumn Context="order">
         <a href="@($"orders/edit?id={order.Id}")">Edit</a> |
@@ -28,12 +28,12 @@
 </QuickGrid>
 
 @code {
-    private ApplicationDbContext context = default!;
+    private ApplicationDbContext _context = default!;
 
     protected override void OnInitialized()
     {
-        context = DbFactory.CreateDbContext();
+        _context = DbFactory.CreateDbContext();
     }
 
-    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 }
