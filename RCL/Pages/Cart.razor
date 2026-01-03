@@ -1,6 +1,117 @@
-﻿@page "/Cart"
-<h3>O seu carrinho</h3>
+﻿@page "/cart"
+@using RCL.Dtos
+@inject CartService CartService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="m-0">Cart</h3>
+
+        @if (CartService.Items.Any())
+        {
+            <button class="btn btn-outline-danger btn-sm" @onclick="CartService.Clear">
+                Clear Cart
+            </button>
+        }
+    </div>
+
+    @if (!CartService.Items.Any())
+    {
+        <div class="alert alert-secondary">
+            Your cart is empty.
+        </div>
+        <button class="btn btn-primary" @onclick="GoHome">Browse products</button>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                <tr>
+                    <th>Product</th>
+                    <th style="width: 140px;">Quantity</th>
+                    <th class="text-end">Price</th>
+                    <th class="text-end">Subtotal</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in CartService.Items)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@item.Name</div>
+                        </td>
+                        <td>
+                            <input class="form-control form-control-sm"
+                                   type="number"
+                                   min="1"
+                                   value="@item.Quantity"
+                                   @onchange="e => OnQtyChanged(item.ProductId, e)"/>
+                        </td>
+                        <td class="text-end">@item.UnitPrice.ToString("0.00") €</td>
+                        <td class="text-end">@((item.UnitPrice * item.Quantity).ToString("0.00")) €</td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    @onclick="() => CartService.Remove(item.ProductId)">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <div class="border rounded p-3" style="min-width: 280px;">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Items</span>
+                    <span class="fw-semibold">@CartService.TotalItems</span>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span class="text-muted">Total</span>
+                    <span class="fw-bold">@CartService.TotalPrice.ToString("0.00") €</span>
+                </div>
+
+                <div class="d-grid mt-3">
+                    <button class="btn btn-primary" @onclick="GoCheckout">
+                        Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
-    
+
+    protected override void OnInitialized()
+    {
+        CartService.Changed += StateHasChanged;
+    }
+
+    private void GoCheckout()
+    {
+        Navigation.NavigateTo("/checkout");
+    }
+
+    private void OnQtyChanged(int productId, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var q))
+            CartService.SetQuantity(productId, q);
+        else
+            CartService.SetQuantity(productId, 1);
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        CartService.Changed -= StateHasChanged;
+    }
+
 }

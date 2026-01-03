@@ -1,35 +1,49 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MyMedia.Domain.Entities;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MyMedia.Infrastructure.Entities.enums;
 using RCL.Dtos.Request;
-using RCL.Dtos.Response;
 using WebAPI.Repositories;
 using WebAPI.utils;
 
-namespace WebAPI.Controllers
+namespace WebAPI.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ProductController(IProductRepository productRepository) : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductController(IProductRepository productRepository) : ControllerBase
+    [HttpGet]
+    public async Task<IActionResult> GetProducts([FromQuery] ProductQuery query)
     {
-        // GET: api/Product?category
-        [HttpGet]
-        public async Task<IActionResult> GetProducts([FromQuery] ProductQuery query)
-        {
-            var products = await productRepository.GetProducts(query);
-            var productDtos = products.Select(Mapper.FromProduct);
-            return Ok(productDtos);
-        }
+        var products = await productRepository.GetProducts(query);
+        var productDtos = products.Select(Mapper.FromProduct);
+        return Ok(productDtos);
+    }
+        
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetProduct(int id)
+    {
+        var product = await productRepository.GetProduct(id);
+        if (product is null) return NotFound();
+        var dto = Mapper.FromProduct(product);
+        return Ok(dto);
+    }
 
-        // GET: api/Product/5
-        [HttpGet("{id}")]
-        public async Task<Product> GetProduct(int id)
-        {
-            return await productRepository.GetProduct(id);
-        }
+    [Authorize(Roles = nameof(UserRoles.Supplier))]
+    [HttpPost]
+    public async Task<IActionResult> AddProduct([FromBody] CreateProductDto createProductDto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
-        // PUT: api/Product
-        [HttpPost]
-        public async Task<int> AddProduct([FromBody] ProductRequestDto productRequest)
-            => await productRepository.AddProduct(productRequest);
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var result = await productRepository.AddProduct(userId, createProductDto);
+
+        if (result.Errors.Any())
+            return BadRequest(new { errors = result.Errors });
+
+        return Ok(result.Product);
     }
 }

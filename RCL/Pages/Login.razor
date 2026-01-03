@@ -53,7 +53,15 @@
     private LoginRequestDto _model = new();
     private bool _isSubmitting;
     private List<string> _errors = new();
+    private string _returnUrl = "/";
 
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var q = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _returnUrl = q["returnUrl"] ?? "/";
+    }
+    
     private async Task Auth()
     {
         _errors.Clear();
@@ -75,7 +83,7 @@
                 await RestService.SetToken(auth.AccessToken);
 
                 Console.Write(auth.AccessToken);
-                Navigation.NavigateTo("/");
+                Navigation.NavigateTo(_returnUrl);
                 return;
             }
 

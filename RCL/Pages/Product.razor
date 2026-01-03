@@ -1,6 +1,146 @@
-﻿@page "/product/{id:int}"
-<h3></h3>
+﻿@page "/product/{Id:int}"
+@using RCL.Dtos
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject NavigationManager Navigation
+@inject CartService Cart
+
+<div class="container mt-3">
+    @if (_showAddedModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Added to cart</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Product added to the cart successfully. Go to your cart?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                        <button type="button" class="btn btn-primary" @onclick="GoToCart">Go to cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (_product is null && !_notFound)
+    {
+        <div class="text-muted">Loading...</div>
+    }
+    else if (_notFound)
+    {
+        <div class="alert alert-warning">
+            Product not found.
+            <button class="btn btn-link p-0 ms-2" @onclick="() => GoHome()">
+                Go back
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            <div class="col-12 col-md-5">
+                <div class="border rounded bg-light d-flex align-items-center justify-content-center"
+                     style="min-height: 280px;">
+                    @if (_product!.ImageData is { Length: > 0 })
+                    {
+                        <img src="@ToImageSrc(_product.ImageData)"
+                             class="img-fluid rounded"
+                             alt="@_product.Name"/>
+                    }
+                    else
+                    {
+                        <div class="text-muted">No image</div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-12 col-md-7">
+                <h3 class="mb-1">@_product!.Name</h3>
+
+                <div class="d-flex align-items-baseline gap-3 mb-2">
+                    <div class="fs-4 fw-bold">@_product.Price.ToString("0.00") €</div>
+                </div>
+
+                <div class="text-muted mb-2">
+                    Supplier: <span class="fw-semibold">@_product.SupplierName</span>
+                </div>
+
+                <div class="mb-3">
+                    Stock: <span class="fw-semibold">@_product.Stock</span>
+                </div>
+
+                @if (_product.Description is not null && _product.Description.Length > 0)
+                {
+                    <p class="mb-4">@_product.Description</p>
+                }
+
+                @if (_product.Status == "Active")
+                {
+                    <button class="btn btn-primary" @onclick="AddToCart" disabled="@(_product.Stock <= 0)">
+                        Add to cart
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-dark" disabled> Product not yet active</button>
+                }
+
+                <button class="btn btn-outline-secondary ms-2" @onclick="GoHome">Back</button>
+
+            </div>
+        </div>
+    }
+</div>
 
 @code {
-    
+    [Parameter] public int Id { get; set; }
+
+    private ProductResponseDto? _product;
+    private bool _notFound;
+    private bool _showAddedModal;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _notFound = false;
+        _product = await RestService.GetProduct(Id);
+
+        if (_product is null)
+            _notFound = true;
+    }
+
+    private static string ToImageSrc(byte[] bytes)
+        => $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+
+    private void AddToCart()
+    {
+        if (_product is null) return;
+
+        Cart.Add(new CartItemDto
+        {
+            ProductId = _product.Id,
+            Name = _product.Name,
+            UnitPrice = _product.Price,
+            Quantity = 1,
+            ImageData = _product.ImageData
+        });
+        _showAddedModal = true;
+    }
+
+    private void CloseModal() => _showAddedModal = false;
+
+    private void GoToCart()
+    {
+        _showAddedModal = false;
+        Navigation.NavigateTo("/cart");
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
 }

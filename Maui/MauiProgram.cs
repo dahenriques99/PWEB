@@ -25,6 +25,7 @@ public static class MauiProgram
         });
         
         builder.Services.AddScoped<AuthStateService>();
+        builder.Services.AddScoped<CartService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

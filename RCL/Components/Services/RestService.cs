@@ -5,22 +5,13 @@ using RCL.Dtos.Response;
 
 namespace RCL.Components.Services;
 
-public class RestService
+public class RestService(HttpClient httpClient, AuthStateService auth)
 {
-    private readonly HttpClient _httpClient;
-    private readonly AuthStateService _authStateService;
-
-    public RestService(HttpClient httpClient, AuthStateService auth)
-    {
-        _httpClient = httpClient;
-        _authStateService = auth;
-    }
-
     public async Task<IEnumerable<CategoryDto>> GetAllCategories()
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<IEnumerable<CategoryDto>>("/api/Category");
+            var response = await httpClient.GetFromJsonAsync<IEnumerable<CategoryDto>>("/api/Category");
             return response ?? Enumerable.Empty<CategoryDto>();
             ;
         }
@@ -31,7 +22,7 @@ public class RestService
         }
     }
 
-    public async Task<IEnumerable<ProductDto>> GetProducts(ProductQuery query)
+    public async Task<IEnumerable<ProductResponseDto>> GetProducts(ProductQuery query)
     {
         try
         {
@@ -43,43 +34,97 @@ public class RestService
             if (query.MatchAllCategories)
                 parts.Add("MatchAllCategories=true");
 
+            if (query.OnlyInStock)
+                parts.Add("OnlyInStock=true");
+            
             var url = "/api/Product" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
 
-            var response = await _httpClient.GetFromJsonAsync<IEnumerable<ProductDto>>(url);
-            return response ?? Enumerable.Empty<ProductDto>();
+            var response = await httpClient.GetFromJsonAsync<IEnumerable<ProductResponseDto>>(url);
+            return response ?? Enumerable.Empty<ProductResponseDto>();
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error fetching products: {ex.Message}");
-            return Enumerable.Empty<ProductDto>();
+            return Enumerable.Empty<ProductResponseDto>();
         }
     }
+    
+    public async Task<ProductResponseDto?> GetProduct(int id)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<ProductResponseDto>($"/api/product/{id}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fetching product {id}: {ex.Message}");
+            return null;
+        }
+    }
+    
+    public async Task<HttpResponseMessage> Checkout(CheckoutRequestDto request)
+    {
+        EnsureAuthHeader();
+        return await httpClient.PostAsJsonAsync("/api/order/checkout", request);
+    }
 
+    public async Task<ProfileDto?> GetProfile()
+    {
+        EnsureAuthHeader();
+        return await httpClient.GetFromJsonAsync<ProfileDto>("/api/Profile");
+    }
+
+    public async Task<IEnumerable<OrderSummaryDto>> GetUserOrders()
+    {
+        EnsureAuthHeader();
+        return await httpClient.GetFromJsonAsync<IEnumerable<OrderSummaryDto>>("/api/Profile/orders")
+               ?? Enumerable.Empty<OrderSummaryDto>();
+    }
+    
+    public async Task<IEnumerable<ProductResponseDto>> GetUserProducts()
+    {
+        EnsureAuthHeader();
+        return await httpClient.GetFromJsonAsync<IEnumerable<ProductResponseDto>>("/api/Profile/products")
+               ?? Enumerable.Empty<ProductResponseDto>();
+    }
+    
+    public Task<HttpResponseMessage> AddProduct(CreateProductDto dto)
+    {
+        EnsureAuthHeader();
+        return httpClient.PostAsJsonAsync("/api/product", dto);
+    }
+    
     public async Task<HttpResponseMessage> Register(RegisterRequestDto request)
     {
-        return await _httpClient.PostAsJsonAsync("/api/auth/register", request);
+        return await httpClient.PostAsJsonAsync("/api/auth/register", request);
     }
     
     public async Task<HttpResponseMessage> Login(LoginRequestDto request)
     {
-        return await _httpClient.PostAsJsonAsync("/api/auth/login", request);
+        return await httpClient.PostAsJsonAsync("/api/auth/login", request);
     }
     
-    private string? _token;
-
-    
-    public Task SetToken(string token)
+    public async Task SetToken(string token)
     {
-        _authStateService.SetToken(token);
-        _httpClient.DefaultRequestHeaders.Authorization =
+        await auth.SetTokenAsync(token);
+        httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
-        return Task.CompletedTask;
     }
     
-    public Task Logout()
+    public async Task Logout()
     {
-        _authStateService.Clear();
-        _httpClient.DefaultRequestHeaders.Authorization = null;
-        return Task.CompletedTask;
+        await auth.ClearAsync();
+        httpClient.DefaultRequestHeaders.Authorization = null;
     }
+    
+    public void EnsureAuthHeader()
+    {
+        var token = auth.Token;
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+        }
+    }
+    
 }
