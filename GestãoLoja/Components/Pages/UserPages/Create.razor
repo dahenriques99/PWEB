@@ -3,7 +3,6 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
@@ -24,14 +23,13 @@
                 <div class="mb-3">
                     <span class="text-danger">*</span>
                     <label for="clienttype" class="form-label">Supplier:</label>
-                    <InputSelect id="clienttype" @bind-Value="User.ClientType" class="form-select">
+                    <InputSelect id="clienttype" @bind-Value="_clientType" class="form-select">
                         <option value="">-- select --</option>
                         @foreach (UserType type in Enum.GetValues(typeof(UserType)))
                         {
                             <option value="@type">@type</option>
                         }
                     </InputSelect>
-                    <ValidationMessage For="() => User.ClientType" class="text-danger"/>
                 </div>
                 <div class="mb-3">
                     <span class="text-danger">*</span>
@@ -72,21 +70,33 @@
 
 @code {
     [SupplyParameterFromForm] private ApplicationUser User { get; set; } = new();
+    private UserType _clientType;
     
     private async Task AddUser()
     {
         User.PasswordHash = PasswordHasher.HashPassword(User, "Password123!");
         User.UserName = User.Email;
         User.Status = UserStatus.Pending;
-        
+
         await using var context = await DbFactory.CreateDbContextAsync();
         context.Users.Add(User);
         await context.SaveChangesAsync();
-        
-        await UserManager.AddToRoleAsync(User, nameof(UserRole.Client));
+
+        switch (_clientType)
+        {
+            case UserType.Client:
+                await UserManager.AddToRoleAsync(User, nameof(UserRoles.Client));
+                break;
+            case UserType.Supplier:
+                await UserManager.AddToRoleAsync(User, nameof(UserRoles.Supplier));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
         NavigationManager.NavigateTo("/admin/users");
     }
-    
+
     private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
@@ -102,4 +112,5 @@
         var base64 = Convert.ToBase64String(previewStream.ToArray());
         _previewUrl = $"data:{file.ContentType};base64,{base64}";
     }
+
 }

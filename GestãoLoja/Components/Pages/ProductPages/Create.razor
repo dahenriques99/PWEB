@@ -2,9 +2,9 @@
 @attribute [Authorize(Roles = "Admin, Worker")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@using MyMedia.Domain.Entities
-@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Nav
 
@@ -23,7 +23,7 @@
                     <span class="text-danger">*</span>
                     <label for="supplierid" class="form-label">Supplier:</label>
                     <InputSelect id="supplierid" @bind-Value="Product.SupplierId" class="form-select">
-                        <option value="">-- select --</option>
+                        <option value="">Select a Supplier</option>
                         @foreach (var supplier in _suppliers)
                         {
                             <option value="@supplier.Id">@supplier.Name</option>
@@ -94,45 +94,28 @@
         _suppliers = query.Where(u => context.UserRoles
             .Where(ur => ur.UserId == u.Id)
             .Join(context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-            .Contains(nameof(UserRole.Supplier)))
+            .Contains(nameof(UserRoles.Supplier)))
             .ToList();
     }
 
     private async Task AddProduct()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-
-        // var user = await UserManager.GetUserAsync(
-        //     (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User);
-        // Product.SupplierId = user!.Id;
-
+        
         context.Products.Add(Product);
         await context.SaveChangesAsync();
 
         Nav.NavigateTo("/products");
     }
 
-    private string? _previewUrl = null;
+    private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
-        // var file = e.File;
-        // using var stream = new MemoryStream();
-        // await file.OpenReadStream().CopyToAsync(stream);
-        // Product.ImageData = stream.ToArray(); //Only saves bytes
-        //
-        // //Creates pre visualization
-        // using var previewStream = new MemoryStream();
-        // await file.OpenReadStream().CopyToAsync(previewStream);
-        // var base64 = Convert.ToBase64String(previewStream.ToArray());
-        // _previewUrl = $"data:{file.ContentType};base64,{base64}";
         var file = e.File;
 
-        using var stream = file.OpenReadStream();
         using var ms = new MemoryStream();
-
-        await stream.CopyToAsync(ms);
-
+        await file.OpenReadStream().CopyToAsync(ms);
         var bytes = ms.ToArray();
 
         // Save to entity
