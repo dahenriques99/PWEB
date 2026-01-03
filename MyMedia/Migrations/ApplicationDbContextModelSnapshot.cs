@@ -373,7 +373,7 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("ProductCategories");
+                    b.ToTable("ProductCategories", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
