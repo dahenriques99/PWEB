@@ -1,20 +1,21 @@
-﻿using MyMedia.Domain.Entities;
+﻿using MyMedia.Infrastructure.Entities;
 using RCL.Dtos.Response;
 
 namespace WebAPI.utils;
 
 public class Mapper
 {
-    public static ProductDto FromProduct(Product product)
+    public static ProductResponseDto FromProduct(Product product)
     {
-        return new ProductDto
+        return new ProductResponseDto
         {
             Id = product.Id,
             SupplierName = product.Supplier.Name,
             Name = product.Name,
             Description = product.Description,
-            Price = product.Price,
+            Price = product.FinalPrice,
             Stock = product.Stock,
+            Status = product.Status.ToString(),
             ImageData = product.ImageData
         };
     }

@@ -1,4 +1,5 @@
 using BlazorWeb.Components;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using RCL.Components.Services;
 using RCL.Pages;
 
@@ -8,7 +9,11 @@ builder.Services.AddHttpClient<RestService>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7124/");
 });
+
+builder.Services.AddScoped<ProtectedSessionStorage>();
+
 builder.Services.AddScoped<AuthStateService>();
+builder.Services.AddScoped<CartService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

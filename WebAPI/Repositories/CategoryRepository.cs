@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyMedia.Domain.Entities;
+using MyMedia.Infrastructure.Entities;
 using MyMedia.Infrastructure;
 
 namespace WebAPI.Repositories;

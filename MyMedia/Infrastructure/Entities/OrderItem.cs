@@ -1,11 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MyMedia.Domain.Entities;
+namespace MyMedia.Infrastructure.Entities;
 
 public class OrderItem
 {
-    [Key]
-    public int Id { get; set; }
 
     [Required]
     public int ProductId { get; set; }
@@ -15,7 +13,7 @@ public class OrderItem
     public int OrderId { get; set; }
     public Order Order { get; set; }
 
-    public DateTime Date { get; set; } = DateTime.Now;
+    public DateTime Date { get; set; } = DateTime.UtcNow;
 
     public decimal Price { get; set; }
 

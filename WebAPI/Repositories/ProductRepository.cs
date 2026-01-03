@@ -1,15 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyMedia.Domain.Entities;
+using MyMedia.Infrastructure.Entities;
 using MyMedia.Infrastructure;
+using MyMedia.Infrastructure.Entities.enums;
 using RCL.Dtos.Request;
+using RCL.Dtos.Response;
+using WebAPI.utils;
 
 namespace WebAPI.Repositories;
 
 public interface IProductRepository
 {
     Task<IEnumerable<Product>> GetProducts(ProductQuery query);
-    Task<Product> GetProduct(int id);
-    Task<int> AddProduct(ProductRequestDto productRequest);
+    Task<Product?> GetProduct(int id);
+    Task<(ProductResponseDto? Product, List<string> Errors)> AddProduct(string supplierId, CreateProductDto dto);
 }
 
 public class ProductRepository(ApplicationDbContext dbContext) : IProductRepository
@@ -18,10 +21,11 @@ public class ProductRepository(ApplicationDbContext dbContext) : IProductReposit
     {
         IQueryable<Product> products = dbContext.Products
             .AsNoTracking()
+            .Where(p => p.Status == ProductStatus.Active)
             .Include(p => p.ProductCategories)
             .Include(p => p.Supplier)
             .AsQueryable();
-        
+
         if (query.CategoryIds is { Count: > 0 })
         {
             var ids = query.CategoryIds.Distinct().ToList();
@@ -38,46 +42,90 @@ public class ProductRepository(ApplicationDbContext dbContext) : IProductReposit
             }
         }
 
+        if (query.OnlyInStock )
+        {
+            products = products.Where(p => p.Stock > 0);
+        }
+
         return await products.ToListAsync();
     }
 
-    public async Task<Product> GetProduct(int id)
+    public async Task<Product?> GetProduct(int id)
     {
-        var detalhe = await dbContext.Products
+        return await dbContext.Products
+            .AsNoTracking()
+            .Include(p => p.Supplier)
+            .Include(p => p.ProductCategories)
+            .ThenInclude(pc => pc.Category)
             .FirstOrDefaultAsync(p => p.Id == id);
-
-        if (detalhe == null) throw new InvalidOperationException();
-
-        return detalhe;
     }
 
-    public async Task<int> AddProduct(ProductRequestDto requestDto)
+    public async Task<(ProductResponseDto? Product, List<string> Errors)> AddProduct(string supplierId,
+        CreateProductDto dto)
     {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(dto.Name)) errors.Add("Name is required.");
+        if (dto.Price <= 0) errors.Add("Price must be > 0.");
+        if (dto.Stock < 0) errors.Add("Stock must be >= 0.");
+
+        var distinctCats = dto.CategoryIds.Distinct().ToList();
+
+        if (distinctCats.Count > 0)
+        {
+            var existing = await dbContext.Categories
+                .Where(c => distinctCats.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            if (existing.Count != distinctCats.Count)
+                errors.Add("One or more categories do not exist.");
+        }
+
+        if (errors.Any())
+            return (null, errors);
+        
         var product = new Product
         {
-            SupplierId = requestDto.SupplierId,
-            Name = requestDto.Name,
-            Description = requestDto.Description,
-            Price = requestDto.Price,
-            FinalPrice = requestDto.FinalPrice,
-            Stock = requestDto.Stock
+            SupplierId = supplierId,
+            Name = dto.Name.Trim(),
+            Description = dto.Description,
+            Price = dto.Price,
+            FinalPrice = dto.Price,
+            Stock = dto.Stock,
+            ImageData = dto.ImageData ?? Array.Empty<byte>(),
+            
+            Status = ProductStatus.Pending
         };
 
-        if (requestDto.CategoryIds is { Count: > 0 })
+        foreach (var catId in distinctCats)
         {
-            foreach (var catId in requestDto.CategoryIds.Distinct())
+            product.ProductCategories.Add(new ProductCategory
             {
-                product.ProductCategories.Add(new ProductCategory
-                {
-                    CategoryId = catId
-                });
-            }
+                CategoryId = catId
+            });
         }
+        
+        var supplierName = await dbContext.Users
+            .Where(u => u.Id == supplierId)
+            .Select(u => u.Name)
+            .FirstOrDefaultAsync() ?? "";
 
         dbContext.Products.Add(product);
         await dbContext.SaveChangesAsync();
+
+        var productResponse = new ProductResponseDto
+        {
+            Id = product.Id,
+            SupplierName = supplierName,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.FinalPrice,
+            Stock = product.Stock,
+            Status = product.Status.ToString(),
+            ImageData = product.ImageData
+        };
         
-        return product.Id;
+        return (productResponse, errors);
     }
-    
 }

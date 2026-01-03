@@ -1,0 +1,179 @@
+﻿@page "/supplier/products/new"
+@using RCL.Dtos.Request
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject AuthStateService AuthStateService
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <h3 class="mb-3">Add product</h3>
+
+    @if (!AuthStateService.IsLoggedIn)
+    {
+        <div class="alert alert-warning">
+            Please login as a supplier.
+        </div>
+        <button class="btn btn-primary" @onclick="GoLogin">Login</button>
+        return;
+    }
+
+    @if (_errors.Any())
+    {
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach (var e in _errors)
+                {
+                    <li>@e</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="Submit">
+        <DataAnnotationsValidator />
+
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="_model.Name" />
+            </div>
+
+            <div class="col-12 col-lg-3">
+                <label class="form-label">Price</label>
+                <InputNumber class="form-control" @bind-Value="_model.Price" />
+            </div>
+
+            <div class="col-12 col-lg-3">
+                <label class="form-label">Stock</label>
+                <InputNumber class="form-control" @bind-Value="_model.Stock" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Description</label>
+                <InputTextArea class="form-control" @bind-Value="_model.Description" />
+            </div>
+            
+            <InputFile OnChange="OnFileSelected" accept="image/*" />
+            @if (!string.IsNullOrWhiteSpace(_imageError))
+            {
+                <div class="text-danger small mt-1">@_imageError</div>
+            }
+
+            <div class="col-12">
+                <label class="form-label">Categories</label>
+                @if (_categories is null)
+                {
+                    <div class="text-muted">Loading...</div>
+                }
+                else
+                {
+                    <div class="row">
+                        @foreach (var c in _categories)
+                        {
+                            var checkedNow = _selectedCats.Contains(c.Id);
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           checked="@checkedNow"
+                                           @onchange="e => ToggleCat(c.Id, (bool)e.Value!)" />
+                                    <label class="form-check-label">@c.Name</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="col-12 d-grid">
+                <button class="btn btn-primary" disabled="@_submitting">
+                    @(_submitting ? "Saving..." : "Save product")
+                </button>
+            </div>
+
+            <div class="col-12">
+                <div class="text-muted small">
+                    New products start as <strong>Pending</strong> until approved by Store Management.
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private CreateProductDto _model = new();
+    private IEnumerable<CategoryDto>? _categories;
+    private readonly HashSet<int> _selectedCats = new();
+    private readonly List<string> _errors = new();
+    private bool _submitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await RestService.GetAllCategories();
+    }
+
+    private void ToggleCat(int id, bool isChecked)
+    {
+        if (isChecked) _selectedCats.Add(id);
+        else _selectedCats.Remove(id);
+
+        _model.CategoryIds = _selectedCats.ToList();
+    }
+
+    private async Task Submit()
+    {
+        _errors.Clear();
+        _submitting = true;
+
+        try
+        {
+            var resp = await RestService.AddProduct(_model);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                var product = await resp.Content.ReadFromJsonAsync<ProductResponseDto>();
+                Navigation.NavigateTo($"/product/{product.Id}"); 
+                return;
+            }
+
+            var apiErr = await resp.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            if (apiErr?.Errors?.Any() == true) _errors.AddRange(apiErr.Errors);
+            else _errors.Add("Failed to create product.");
+        }
+        catch (Exception ex)
+        {
+            _errors.Add(ex.Message);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+    
+    private string? _imageError;
+    
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _imageError = null;
+
+        var file = e.File;
+        if (file is null) return;
+
+        // keep it small-ish for DB + API (tweak as you want)
+        const long maxBytes = 1_000_000; // 1 MB
+        if (file.Size > maxBytes)
+        {
+            _imageError = "Image too large (max 1MB).";
+            _model.ImageData = null;
+            return;
+        }
+
+        using var stream = file.OpenReadStream(maxBytes);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+
+        _model.ImageData = ms.ToArray();
+    }
+
+    private void GoLogin() => Navigation.NavigateTo("/login?returnUrl=/supplier/products/new");
+}
