@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using RCL.Dtos;
 using MyMedia.Infrastructure;
 using MyMedia.Infrastructure.Entities.enums;
 using RCL.Dtos.Request;
@@ -92,7 +91,7 @@ public class AuthController(
         if (!create.Succeeded)
             return BadRequest(new { errors = create.Errors.Select(e => e.Description) });
 
-        var addRole = await userManager.AddToRoleAsync(user, UserRoles.Client);
+        var addRole = await userManager.AddToRoleAsync(user, nameof(UserRoles.Client));
         if (!addRole.Succeeded)
             return BadRequest(new { errors = addRole.Errors.Select(e => e.Description) });
 

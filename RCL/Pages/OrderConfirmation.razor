@@ -1,0 +1,20 @@
+﻿@page "/order-confirmation/{OrderId:int}"
+@inject NavigationManager Navigation
+
+<h3>Order placed ✅</h3>
+<p>Your order <strong>#@OrderId</strong> was created successfully.</p>
+
+<button class="btn btn-primary" @onclick="GoHome">
+    Continue shopping
+</button>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+}

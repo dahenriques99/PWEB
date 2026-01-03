@@ -2,7 +2,7 @@
 
 public enum OrderStatus
 {
-    InCart, 
+    InCart,
     Cancelled,
     PendingPayment,
     PaymentFailed,

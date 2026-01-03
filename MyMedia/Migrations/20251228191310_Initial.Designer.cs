@@ -158,7 +158,7 @@ namespace MyMedia.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Category", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -183,7 +183,7 @@ namespace MyMedia.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -212,7 +212,7 @@ namespace MyMedia.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.OrderItem", b =>
                 {
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
@@ -239,7 +239,7 @@ namespace MyMedia.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -279,7 +279,7 @@ namespace MyMedia.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
                 {
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -430,7 +430,7 @@ namespace MyMedia.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
                 {
                     b.HasOne("MyMedia.Infrastructure.ApplicationUser", "User")
                         .WithMany("Orders")
@@ -441,15 +441,15 @@ namespace MyMedia.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.OrderItem", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.OrderItem", b =>
                 {
-                    b.HasOne("MyMedia.Domain.Entities.Order", "Order")
+                    b.HasOne("MyMedia.Infrastructure.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyMedia.Domain.Entities.Product", "Product")
+                    b.HasOne("MyMedia.Infrastructure.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -460,7 +460,7 @@ namespace MyMedia.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
                 {
                     b.HasOne("MyMedia.Infrastructure.ApplicationUser", "Supplier")
                         .WithMany("SuppliedProducts")
@@ -471,15 +471,15 @@ namespace MyMedia.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.ProductCategory", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
                 {
-                    b.HasOne("MyMedia.Domain.Entities.Category", "Category")
+                    b.HasOne("MyMedia.Infrastructure.Entities.Category", "Category")
                         .WithMany("ProductCategories")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyMedia.Domain.Entities.Product", "Product")
+                    b.HasOne("MyMedia.Infrastructure.Entities.Product", "Product")
                         .WithMany("ProductCategories")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -490,17 +490,17 @@ namespace MyMedia.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Category", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
                 {
                     b.Navigation("ProductCategories");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
                 {
                     b.Navigation("OrderItems");
 
