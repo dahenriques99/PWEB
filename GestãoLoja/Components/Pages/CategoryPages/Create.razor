@@ -1,0 +1,66 @@
+﻿@page "/categories/create"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Category</PageTitle>
+
+<h1>Create Category</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Category" OnValidSubmit="AddCategory" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <span class="text-danger">*</span>
+                <label for="name" class="form-label">Name:</label> 
+                <InputText id="name" @bind-Value="Category.Name" class="form-control" aria-required="true"/> 
+                <ValidationMessage For="() => Category.Name" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="description" class="form-label">Description:</label> 
+                <InputText id="description" @bind-Value="Category.Description" class="form-control" /> 
+                <ValidationMessage For="() => Category.Description" class="text-danger" /> 
+            </div>   
+            <div class="mb-3">
+                <label for="parentcategory" class="form-label">Parent Category:</label>
+                <InputSelect id="parentcategory" @bind-Value="Category.ParentCategoryId" class="form-select">
+                    <option value="">Select a category</option>
+                    @foreach (var category in _categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a class="btn btn-secondary" href="/categories">Back to List</a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Category Category { get; set; } = new();
+
+    private List<Category> _categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _categories = await context.Categories.ToListAsync();
+    }
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddCategory()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Categories.Add(Category);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/categories");
+    }
+}

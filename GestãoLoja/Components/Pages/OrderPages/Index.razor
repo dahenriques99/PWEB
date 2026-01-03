@@ -1,0 +1,39 @@
+﻿@page "/orders"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using MyMedia.Infrastructure
+@implements IAsyncDisposable
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+
+<PageTitle>Orders</PageTitle>
+
+<h1>Orders</h1>
+
+<p>
+    <a href="orders/create" class="btn btn-primary">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Orders">
+    <PropertyColumn Property="order => order.UserId" />
+    <PropertyColumn Property="order => order.TotalAmount" />
+    <PropertyColumn Property="order => order.Status" />
+    <PropertyColumn Property="order => order.Date" />
+    <PropertyColumn Property="order => order.DeliveryId" />
+
+    <TemplateColumn Context="order">
+        <a href="@($"orders/edit?id={order.Id}")">Edit</a> |
+        <a href="@($"orders/details?id={order.Id}")">Details</a> |
+        <a href="@($"orders/delete?id={order.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private ApplicationDbContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
