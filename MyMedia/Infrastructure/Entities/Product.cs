@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
+using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
 

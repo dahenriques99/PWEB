@@ -12,8 +12,8 @@ using MyMedia.Infrastructure;
 namespace MyMedia.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260103210115_ClientStatus")]
-    partial class ClientStatus
+    [Migration("20260103225429_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -266,7 +266,48 @@ namespace MyMedia.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ParentCategoryId");
+
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.DeliveryMode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryModes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Delivery"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Pickup"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Store Pickup"
+                        });
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
@@ -280,6 +321,9 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DeliveryModeId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -291,6 +335,8 @@ namespace MyMedia.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryModeId");
 
                     b.HasIndex("UserId");
 
@@ -430,13 +476,31 @@ namespace MyMedia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
+                {
+                    b.HasOne("MyMedia.Infrastructure.Entities.Category", "ParentCategory")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("ParentCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ParentCategory");
+                });
+
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
                 {
+                    b.HasOne("MyMedia.Infrastructure.Entities.DeliveryMode", "DeliveryMode")
+                        .WithMany("Orders")
+                        .HasForeignKey("DeliveryModeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("MyMedia.Infrastructure.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("DeliveryMode");
 
                     b.Navigation("User");
                 });
@@ -500,6 +564,13 @@ namespace MyMedia.Migrations
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
                 {
                     b.Navigation("ProductCategories");
+
+                    b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.DeliveryMode", b =>
+                {
+                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
