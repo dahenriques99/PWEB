@@ -15,5 +15,5 @@ public class DeliveryMode
     public string? Details { get; set; }
 
     [JsonIgnore]
-    public ICollection<Product>? products { get; set; }
+    public ICollection<Order>? Orders { get; set; }
 }

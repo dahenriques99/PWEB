@@ -1,0 +1,37 @@
+﻿@page "/deliverymodes"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure
+@implements IAsyncDisposable
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+
+<PageTitle>Delivery Modes</PageTitle>
+
+<h1>Delivery Modes</h1>
+
+<p>
+    <a href="deliverymodes/create" class="btn btn-primary">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="_context.DeliveryModes">
+    <PropertyColumn Property="deliveryMode => deliveryMode.Name" />
+    <PropertyColumn Property="deliveryMode => deliveryMode.Details" />
+
+    <TemplateColumn Context="deliveryMode">
+        <a href="@($"deliverymodes/edit?id={deliveryMode.Id}")">Edit</a> |
+        <a href="@($"deliverymodes/details?id={deliveryMode.Id}")">Details</a> |
+        <a href="@($"deliverymodes/delete?id={deliveryMode.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private ApplicationDbContext _context = default!;
+
+    protected override void OnInitialized()
+    {
+        _context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+}

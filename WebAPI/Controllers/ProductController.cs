@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyMedia.Infrastructure.Entities.enums;
+using MyMedia.Infrastructure.Entities;
 using RCL.Dtos.Request;
 using WebAPI.Repositories;
 using WebAPI.utils;
