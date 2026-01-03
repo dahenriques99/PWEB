@@ -15,7 +15,6 @@ namespace MyMedia.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
-#pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -318,6 +317,9 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DeliveryModeId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -330,7 +332,7 @@ namespace MyMedia.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryId");
+                    b.HasIndex("DeliveryModeId");
 
                     b.HasIndex("UserId");
 
@@ -499,7 +501,7 @@ namespace MyMedia.Migrations
                 {
                     b.HasOne("MyMedia.Infrastructure.Entities.DeliveryMode", "DeliveryMode")
                         .WithMany("Orders")
-                        .HasForeignKey("DeliveryId")
+                        .HasForeignKey("DeliveryModeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -593,7 +595,6 @@ namespace MyMedia.Migrations
 
                     b.Navigation("ProductCategories");
                 });
-#pragma warning restore 612, 618
         }
     }
 }

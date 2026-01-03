@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+﻿using Microsoft.AspNetCore.Components.ProtectedBrowserStorage;
 using RCL.Dtos;
 
 namespace RCL.Components.Services;
