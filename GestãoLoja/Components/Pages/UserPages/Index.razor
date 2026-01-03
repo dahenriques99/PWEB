@@ -3,7 +3,6 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.EntityFrameworkCore
-@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
@@ -18,7 +17,7 @@
         <label for="roleFilter" class="form-label">Filter by Role:</label>
         <InputSelect id="roleFilter" @bind-Value="_selectedRole" class="form-select">
             <option value="">All Roles</option>
-            @foreach (var role in Enum.GetValues(typeof(UserRole)))
+            @foreach (var role in Enum.GetValues(typeof(UserRoles)))
             {
                 <option value="@role">@role</option>
             }
@@ -43,7 +42,6 @@
 <QuickGrid Class="table" Items="FilteredUsers">
     <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
     <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
-    <PropertyColumn Property="user => user.ClientType" Title="Client Type" Sortable="true"></PropertyColumn>
 
     <TemplateColumn Context="user" Title="Roles">
         @foreach (var role in GetUserRoles(user))
