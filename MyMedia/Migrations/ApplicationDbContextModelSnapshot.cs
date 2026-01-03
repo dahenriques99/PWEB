@@ -177,7 +177,7 @@ namespace MyMedia.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("MyMedia.Domain.Entities.Order", b =>
@@ -206,7 +206,7 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("MyMedia.Domain.Entities.OrderItem", b =>
@@ -233,7 +233,7 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("MyMedia.Domain.Entities.Product", b =>
@@ -273,7 +273,7 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("MyMedia.Domain.Entities.ProductCategory", b =>
@@ -288,7 +288,7 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("ProductCategories");
+                    b.ToTable("ProductCategories", (string)null);
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.ApplicationUser", b =>
