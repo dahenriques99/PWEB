@@ -1,0 +1,94 @@
+﻿@page "/deliverymodes/edit"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>DeliveryMode</h2>
+<hr />
+@if (DeliveryMode is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="DeliveryMode" OnValidSubmit="UpdateDeliveryMode" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="DeliveryMode.Id" value="@DeliveryMode.Id" />
+                <div class="mb-3">
+                <span class="text-danger">*</span>
+                    <label for="name" class="form-label">Name:</label>
+                    <InputText id="name" @bind-Value="DeliveryMode.Name" class="form-control" aria-required="true"/>
+                    <ValidationMessage For="() => DeliveryMode.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="details" class="form-label">Details:</label>
+                    <InputText id="details" @bind-Value="DeliveryMode.Details" class="form-control" />
+                    <ValidationMessage For="() => DeliveryMode.Details" class="text-danger" />
+                </div>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Edit</button>
+                    <a class="btn btn-secondary" href="/deliverymodes">Back to List</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private DeliveryMode? DeliveryMode { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        DeliveryMode ??= await context.DeliveryModes.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (DeliveryMode is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateDeliveryMode()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Attach(DeliveryMode!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!DeliveryModeExists(DeliveryMode!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/deliverymodes");
+    }
+
+    private bool DeliveryModeExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.DeliveryModes.Any(e => e.Id == id);
+    }
+}

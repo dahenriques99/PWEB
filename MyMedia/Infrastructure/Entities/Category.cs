@@ -13,7 +13,9 @@ public class Category
     public string? Description { get; set; }
 
     public int? ParentCategoryId { get; set; }
+    public Category? ParentCategory { get; set; }
     
     public ICollection<ProductCategory> ProductCategories { get; set; }
         = new List<ProductCategory>();
+    public ICollection<Category> SubCategories { get; set; } = new List<Category>();
 }
