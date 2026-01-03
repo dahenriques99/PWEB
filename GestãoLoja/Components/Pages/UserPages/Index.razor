@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
-@using UserStatus = MyMedia.Infrastructure.UserStatus
+@using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <PageTitle>User Management</PageTitle>
@@ -35,20 +35,6 @@
             @foreach (var status in Enum.GetValues(typeof(UserStatus)))
             {
                 <option value="@status">@status</option>
-            }
-        </InputSelect>
-    </div>
-</div>
-
-<!-- Filter by Client Type -->
-<div class="row mb-3">
-    <div class="col-md-4">
-        <label for="typeFilter" class="form-label">Filter by Client Type:</label>
-        <InputSelect id="typeFilter" @bind-Value="_selectedType" class="form-select">
-            <option value="">All Types</option>
-            @foreach (var type in Enum.GetValues(typeof(UserType)))
-            {
-                <option value="@type">@type</option>
             }
         </InputSelect>
     </div>
@@ -92,7 +78,6 @@
 
     private string? _selectedRole; // Selected role from dropdown
     private string? _selectedStatus; // Selected email confirmation status from dropdown
-    private string? _selectedType;
     private IQueryable<ApplicationUser> FilteredUsers => FilterUsers();
 
     protected override async Task OnInitializedAsync()
@@ -108,15 +93,6 @@
         //Admin, 
         if (!string.IsNullOrEmpty(_selectedRole))
         {
-            //Name fixing for now
-            //TODO pass roles to use the UserRoles enum
-            _selectedRole = _selectedRole switch
-            {
-                nameof(UserRole.Supplier) => "Gestor",
-                nameof(UserRole.Client) => "Cliente",
-                _ => _selectedRole
-            };
-            
             query = query.Where(u => _context.UserRoles
                 .Where(ur => ur.UserId == u.Id)
                 .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
@@ -129,16 +105,6 @@
             {
                 nameof(UserStatus.Pending) => query.Where(u => u.Status == UserStatus.Pending),
                 nameof(UserStatus.Active) => query.Where(u => u.Status == UserStatus.Active),
-                _ => query
-            };
-        }
-
-        if (!string.IsNullOrEmpty(_selectedType))
-        {
-            query = _selectedType switch
-            {
-                nameof(UserType.Client) => query.Where(u => u.ClientType == UserType.Client),
-                nameof(UserType.Supplier) => query.Where(u => u.ClientType == UserType.Supplier),
                 _ => query
             };
         }

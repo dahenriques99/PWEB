@@ -5,7 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
-@using UserStatus = MyMedia.Infrastructure.UserStatus
+@using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject IPasswordHasher<ApplicationUser> PasswordHasher
 @inject NavigationManager NavigationManager
@@ -83,7 +83,7 @@
         context.Users.Add(User);
         await context.SaveChangesAsync();
         
-        await UserManager.AddToRoleAsync(User, "Cliente");
+        await UserManager.AddToRoleAsync(User, nameof(UserRole.Client));
         NavigationManager.NavigateTo("/admin/users");
     }
     

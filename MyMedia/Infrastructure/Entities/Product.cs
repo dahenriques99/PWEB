@@ -34,7 +34,6 @@ public class Product
     [Required(ErrorMessage = "The Product Stock is required")]
     [Range(0, int.MaxValue, ErrorMessage = "The Product Price cannot be negative")]
     public int Stock { get; set; }
-
     public byte[]? ImageData { get; set; }
     
     [NotMapped]
