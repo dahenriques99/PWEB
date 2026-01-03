@@ -30,19 +30,6 @@ else
                           OnValidSubmit="UpdateUser" FormName="edit" Enhance>
                     <DataAnnotationsValidator/>
                     <ValidationSummary class="text-danger" role="alert"/>
-                    <input type="hidden" name="User.Id" value="@User.Id"/>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="clienttype" class="form-label">Supplier:</label>
-                        <InputSelect id="clienttype" @bind-Value="User.ClientType" class="form-select">
-                            <option value="">-- select --</option>
-                            @foreach (UserType type in Enum.GetValues(typeof(UserType)))
-                            {
-                                <option value="@type">@type</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="() => User.ClientType" class="text-danger"/>
-                    </div>
                     <div class="mb-3">
                         <span class="text-danger">*</span>
                         <label for="name" class="form-label">Name:</label>
