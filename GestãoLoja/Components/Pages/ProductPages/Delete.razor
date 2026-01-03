@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Worker")]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 @inject NavigationManager Nav
 
