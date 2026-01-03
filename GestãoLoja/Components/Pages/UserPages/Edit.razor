@@ -5,6 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
+@using MyMedia.Infrastructure.Entities.enums
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
 @inject NavigationManager Nav
@@ -126,16 +127,10 @@ else
         // Prepare the list of role models
         foreach (UserRole role in Enum.GetValues(typeof(UserRole)))
         {
-            var r = role switch
-            {
-                UserRole.Client => "Cliente",
-                UserRole.Supplier => "Gestor",
-                _ => role.ToString()
-            };
             Roles.Add(new RoleSelectionModel
             {
                 Name = role,
-                IsSelected = userRoles.Contains(r)
+                IsSelected = userRoles.Contains(role.ToString())
             });
         }
     }
@@ -181,33 +176,13 @@ else
         var rolesToRemove = userRoles.Except(
             Roles
                 .Where(r => r.IsSelected)
-                .Select(r =>
-                {
-                    //Name fixing for now
-                    //TODO use roles as UserRole
-                    return r.Name switch
-                    {
-                        UserRole.Client => "Cliente",
-                        UserRole.Supplier => "Gestor",
-                        _ => r.Name.ToString()
-                    };
-                })
+                .Select(r => r.Name.ToString())
         ).ToList();
         await UserManager.RemoveFromRolesAsync(user!, rolesToRemove);
         
         var rolesToAdd = Roles
             .Where(r => r.IsSelected)
-            .Select(r =>
-            {
-                //Name fixing for now
-                //TODO use roles as UserRole
-                return r.Name switch
-                {
-                    UserRole.Client => "Cliente",
-                    UserRole.Supplier => "Gestor",
-                    _ => r.Name.ToString()
-                };
-            })
+            .Select(r => r.Name.ToString())
             .Except(userRoles)
             .ToList();
         await UserManager.AddToRolesAsync(user!, rolesToAdd);
