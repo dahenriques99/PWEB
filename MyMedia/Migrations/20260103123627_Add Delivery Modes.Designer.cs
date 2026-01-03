@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyMedia.Infrastructure;
 
@@ -11,9 +12,11 @@ using MyMedia.Infrastructure;
 namespace MyMedia.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260103123627_Add Delivery Modes")]
+    partial class AddDeliveryModes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -277,8 +280,9 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
@@ -305,6 +309,9 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
@@ -315,7 +322,6 @@ namespace MyMedia.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
                     b.ToTable("OrderItems");
                 });
 
@@ -334,7 +340,7 @@ namespace MyMedia.Migrations
                     b.ToTable("ProductCategories");
                 });
 
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
+            modelBuilder.Entity("Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -359,9 +365,6 @@ namespace MyMedia.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(10,2)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
 
                     b.Property<int>("Stock")
                         .HasColumnType("int");
@@ -447,7 +450,7 @@ namespace MyMedia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyMedia.Infrastructure.Entities.Product", "Product")
+                    b.HasOne("Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -458,17 +461,6 @@ namespace MyMedia.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
-                {
-                    b.HasOne("MyMedia.Infrastructure.ApplicationUser", "Supplier")
-                        .WithMany("SuppliedProducts")
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Supplier");
-                });
-
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
                 {
                     b.HasOne("MyMedia.Infrastructure.Entities.Category", "Category")
@@ -477,7 +469,7 @@ namespace MyMedia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyMedia.Infrastructure.Entities.Product", "Product")
+                    b.HasOne("Product", "Product")
                         .WithMany("ProductCategories")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -516,7 +508,7 @@ namespace MyMedia.Migrations
                     b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
+            modelBuilder.Entity("Product", b =>
                 {
                     b.Navigation("OrderItems");
 
