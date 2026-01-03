@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.22" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -26,6 +27,12 @@
 
     <ItemGroup>
       <None Include="wwwroot\isecLogo.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Components.Server">
+        <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.21\Microsoft.AspNetCore.Components.Server.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

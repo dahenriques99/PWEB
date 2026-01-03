@@ -2,8 +2,9 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
 using MyMedia.Infrastructure;
+using MyMedia.Infrastructure.Entities.enums;
 
-namespace MyMedia.Domain.Entities;
+namespace MyMedia.Infrastructure.Entities;
 
 public class Product
 {
@@ -12,7 +13,8 @@ public class Product
 
     [Required]
     public string SupplierId { get; set; }
-    public ApplicationUser? Supplier { get; set; }
+    
+    public ApplicationUser Supplier { get; set; }
 
     [Required(ErrorMessage = "The Product Name is required", AllowEmptyStrings = false)]
     [StringLength(50, ErrorMessage = "The Product Name must not exceed 50 characters")]
@@ -39,6 +41,8 @@ public class Product
     
     [NotMapped]
     public IFormFile? Image { get; set; }
+    
+    public ProductStatus Status { get; set; }
 
     public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

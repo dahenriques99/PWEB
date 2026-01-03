@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using MyMedia.Infrastructure;
+using MyMedia.Infrastructure.Entities.enums;
 
-namespace MyMedia.Domain.Entities;
+namespace MyMedia.Infrastructure.Entities;
 
 public class Order
 {
@@ -15,9 +16,9 @@ public class Order
 
     public decimal TotalAmount { get; set; }
 
-    public string Status { get; set; } = "Pending";
+    public OrderStatus Status { get; set; } = OrderStatus.InCart;
 
-    public DateTime Date { get; set; } = DateTime.Now;
+    public DateTime Date { get; set; } = DateTime.UtcNow;
     
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }
