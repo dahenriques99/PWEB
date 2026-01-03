@@ -3,7 +3,6 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using MyMedia.Domain.Entities.enums
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities.enums
 @inject UserManager<ApplicationUser> UserManager
@@ -31,19 +30,6 @@ else
                           OnValidSubmit="UpdateUser" FormName="edit" Enhance>
                     <DataAnnotationsValidator/>
                     <ValidationSummary class="text-danger" role="alert"/>
-                    <input type="hidden" name="User.Id" value="@User.Id"/>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="clienttype" class="form-label">Supplier:</label>
-                        <InputSelect id="clienttype" @bind-Value="User.ClientType" class="form-select">
-                            <option value="">-- select --</option>
-                            @foreach (UserType type in Enum.GetValues(typeof(UserType)))
-                            {
-                                <option value="@type">@type</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="() => User.ClientType" class="text-danger"/>
-                    </div>
                     <div class="mb-3">
                         <span class="text-danger">*</span>
                         <label for="name" class="form-label">Name:</label>
@@ -82,12 +68,6 @@ else
                                 <InputCheckbox @bind-Value="role.IsSelected"
                                                class="form-check-input"/>
                                 <label>@role.Name.ToString()</label>
-                                @* <input class="form-check-input" type="checkbox" *@
-                                @*        id="role-@role.Name" *@
-                                @*        @bind="role.IsSelected"/> *@
-                                @* <label class="form-check-label" for="role-@role.Name"> *@
-                                @*     @role.Name *@
-                                @* </label> *@
                             </div>
                         }
                     </div>
@@ -120,12 +100,12 @@ else
             Nav.NavigateTo("notfound");
             return;
         }
-
+        
         // Get the user's current roles
         var userRoles = await UserManager.GetRolesAsync(User);
 
         // Prepare the list of role models
-        foreach (UserRole role in Enum.GetValues(typeof(UserRole)))
+        foreach (UserRoles role in Enum.GetValues(typeof(UserRoles)))
         {
             Roles.Add(new RoleSelectionModel
             {
@@ -137,27 +117,12 @@ else
 
     private async Task UpdateUser()
     {
-        // await using var context = await DbFactory.CreateDbContextAsync();
-        //
-        // context.Attach(User!).State = EntityState.Modified;
-        
-        // try
-        // {
-        //     await context.SaveChangesAsync();
-        // }
-        // catch (DbUpdateConcurrencyException)
-        // {
-        //     if (!UserExists(User!.Id))
-        //     {
-        //         Nav.NavigateTo("notfound");
-        //     }
-        //     else
-        //     {
-        //         throw;
-        //     }
-        // }
-        var user = await UserManager.FindByIdAsync(User.Id);
+        var user = await UserManager.FindByIdAsync(User?.Id);
         if (user == null) return;
+
+        if (Roles.Find(model => model.Name == UserRoles.Supplier) is { IsSelected: true } &&
+            Roles.Find(model => model.Name == UserRoles.Client) is { IsSelected: true })
+            Roles.Find(model => model.Name == UserRoles.Client).IsSelected = false;
 
         user.Name = User.Name;
         user.Email = User.Email;
@@ -215,7 +180,7 @@ else
 
     public class RoleSelectionModel
     {
-        public UserRole Name { get; set; }
+        public UserRoles Name { get; set; }
         public bool IsSelected { get; set; }
     }
 

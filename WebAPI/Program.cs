@@ -6,7 +6,6 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using WebAPI.Repositories;
-using MyMedia.Domain.Entities;
 using MyMedia.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);

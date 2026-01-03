@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MyMedia.Domain.Entities.enums;
 using MyMedia.Infrastructure.Entities;
+using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure;
 
@@ -12,7 +12,7 @@ public static class Initialization
         RoleManager<IdentityRole> roleManager,
         ApplicationDbContext db)
     {
-        foreach (UserRole userRole in Enum.GetValues(typeof(UserRole)))
+        foreach (UserRoles userRole in Enum.GetValues(typeof(UserRoles)))
         {
             var role = userRole.ToString();
             if (await roleManager.RoleExistsAsync(role)) continue;
@@ -29,7 +29,7 @@ public static class Initialization
             password: "Is3C..00",
             name: "Administrador",
             surname: "Local",
-            role: nameof(UserRole.Admin));
+            role: nameof(UserRoles.Admin));
 
         await EnsureUser(
             userManager,
@@ -37,7 +37,7 @@ public static class Initialization
             password: "Is3C..00",
             name: "Gestor",
             surname: "Local",
-            role: nameof(UserRole.Supplier));
+            role: nameof(UserRoles.Supplier));
 
         if (!await db.Categories.AnyAsync())
         {

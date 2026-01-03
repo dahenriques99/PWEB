@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
-using MyMedia.Infrastructure;
-using MyMedia.Infrastructure.Entities;
+
+namespace MyMedia.Infrastructure.Entities;
 
 public class Product
 {

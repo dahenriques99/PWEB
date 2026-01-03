@@ -92,7 +92,7 @@ public class AuthController(
         if (!create.Succeeded)
             return BadRequest(new { errors = create.Errors.Select(e => e.Description) });
 
-        var addRole = await userManager.AddToRoleAsync(user, UserRoles.Client);
+        var addRole = await userManager.AddToRoleAsync(user, nameof(UserRoles.Client));
         if (!addRole.Succeeded)
             return BadRequest(new { errors = addRole.Errors.Select(e => e.Description) });
 
