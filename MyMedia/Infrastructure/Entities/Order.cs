@@ -1,9 +1,4 @@
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using MyMedia.Infrastructure;
-using MyMedia.Infrastructure.Entities.enums;
-using System.Text.Json.Serialization;
-using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
 
