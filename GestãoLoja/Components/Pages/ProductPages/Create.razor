@@ -114,8 +114,14 @@
     {
         var file = e.File;
 
+        // Allow up to 5 MB (adjust if needed)
+        const long maxFileSize = 5 * 1024 * 1024;
+
+        using var stream = file.OpenReadStream(maxFileSize);
         using var ms = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(ms);
+
+        await stream.CopyToAsync(ms);
+
         var bytes = ms.ToArray();
 
         // Save to entity
