@@ -48,7 +48,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Order>()
             .HasOne(o => o.DeliveryMode)
             .WithMany(dm => dm.Orders)
-            .HasForeignKey(o => o.DeliveryId)
+            .HasForeignKey(o => o.DeliveryModeId)
             .IsRequired();
 
         /* ==================== ORDER ITEM ============================ */
