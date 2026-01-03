@@ -65,9 +65,12 @@
     </TemplateColumn>
     
     <TemplateColumn Title="Actions" Context="user">
-        <a href="@($"admin/users/edit?id={user.Id}")">Edit</a> |
-        <a href="@($"admin/users/details?id={user.Id}")">Details</a>
-        @* <a href="@($"products/delete?id={product.Id}")">Delete</a> *@
+        <button class="btn btn-primary" href="@($"admin/users/edit?id={user.Id}")">Edit</button>
+        <button class="btn btn-secondary" href="@($"admin/users/details?id={user.Id}")">Details</button>
+        @if (user.Status == UserStatus.Active)
+        {
+            <button class="btn btn-danger" @onclick="() => DeactivateUser(user)">Deactivate</button>
+        }
     </TemplateColumn>
 </QuickGrid>
 
@@ -140,6 +143,28 @@
             .Where(ur => ur.UserId == user.Id)
             .Join(newContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
             .ToList(); // Fetch roles as a list of role names
+    }
+
+    private async Task DeactivateUser(ApplicationUser user)
+    {
+        try
+        {
+            await using var newContext = await DbContextFactory.CreateDbContextAsync();
+            // Set email confirmed status
+            user.Status = UserStatus.Inactive;
+
+            // Update the user in the database
+            newContext.Users.Update(user);
+            await newContext.SaveChangesAsync(); // Save changes to confirm the client
+
+            // Explicitly refresh the UI to reflect the change
+            StateHasChanged(); // Refresh the UI
+        }
+        catch (Exception ex)
+        {
+            // Log or handle the exception as needed
+            await Console.Error.WriteLineAsync($"Error confirming client: {ex.Message}");
+        }
     }
 
 }

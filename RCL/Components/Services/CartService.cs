@@ -1,8 +1,9 @@
-﻿using RCL.Dtos;
+﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using RCL.Dtos;
 
 namespace RCL.Components.Services;
 
-public sealed class CartService()
+public sealed class CartService(ProtectedSessionStorage storage)
 {
     private const string CartKey = "cart";
 
@@ -15,6 +16,11 @@ public sealed class CartService()
     public int TotalItems => _items.Sum(i => i.Quantity);
     public decimal TotalPrice => _items.Sum(i => i.UnitPrice * i.Quantity);
 
+    public async Task InitializeAsync()
+    {
+        var result = await storage.GetAsync<string>(CartKey);
+        Changed?.Invoke();
+    }
     
     public void Add(CartItemDto item, int quantity = 1)
     {
