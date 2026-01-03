@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
 
