@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MyMedia.Domain.Entities;
 using MyMedia.Domain.Entities.enums;
+using MyMedia.Infrastructure.Entities;
 
 namespace MyMedia.Infrastructure;
 
