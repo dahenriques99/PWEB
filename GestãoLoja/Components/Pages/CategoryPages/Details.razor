@@ -13,7 +13,7 @@
 
 @if (_isLoading)
 {
-    <p><em>Loading category...</em></p>
+    <p class="text-muted"><em>Loading category...</em></p>
 }
 else if (_category is null)
 {
@@ -21,9 +21,9 @@ else if (_category is null)
 }
 else
 {
-    <div class="card">
-        <div class="card-body">
-            <dl class="row mb-0">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <dl class="row">
                 <dt class="col-sm-3">Name</dt>
                 <dd class="col-sm-9">@_category.Name</dd>
 
@@ -51,18 +51,19 @@ else
                     }
                 </dd>
             </dl>
-        </div>
+        
 
-        <div class="card-footer d-flex gap-2">
-            <a href="@($"/categories/edit?id={_category.Id}")"
-               class="btn btn-primary">
-                Edit
-            </a>
+            <div class="d-flex justify-content-between mt-4">
+                <a class="btn btn-outline-secondary"
+                   href="/categories">
+                    ← Back
+                </a>
 
-            <a href="/categories"
-               class="btn btn-secondary">
-                Back to list
-            </a>
+                <a class="btn btn-primary"
+                   href="@($"/categories/edit?id={_category.Id}")">
+                    Edit
+                </a>
+            </div>
         </div>
     </div>
 }
