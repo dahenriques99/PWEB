@@ -46,4 +46,22 @@ public class ProductController(IProductRepository productRepository) : Controlle
 
         return Ok(result.Product);
     }
+    
+    [Authorize(Roles = nameof(UserRoles.Supplier))]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateProduct(int id)
+    {
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                     ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        // fetch product
+        var product = await productRepository.GetProduct(id);
+        if (product is null) return NotFound();
+
+        // HARD RULE
+        if (product.SupplierId != userId) return Forbid();
+
+        // apply changes -> set Pending -> Save
+        return Ok();
+    }
 }
