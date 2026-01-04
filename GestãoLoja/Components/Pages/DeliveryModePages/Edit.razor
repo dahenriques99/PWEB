@@ -4,38 +4,67 @@
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Edit Delivery Mode</PageTitle>
 
-<h1>Edit</h1>
-
-<h2>DeliveryMode</h2>
-<hr />
 @if (DeliveryMode is null)
 {
-    <p><em>Loading...</em></p>
+    <p class="text-muted"><em>Loading delivery mode…</em></p>
 }
 else
 {
-    <div class="row">
-        <div class="col-md-4">
-            <EditForm method="post" Model="DeliveryMode" OnValidSubmit="UpdateDeliveryMode" FormName="edit" Enhance>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">Edit Delivery Mode</h3>
+            <small class="text-muted">
+                Update the delivery option details
+            </small>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <EditForm Model="DeliveryMode"
+                      OnValidSubmit="UpdateDeliveryMode"
+                      FormName="edit"
+                      Enhance>
+
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="DeliveryMode.Id" value="@DeliveryMode.Id" />
+                <ValidationSummary class="alert alert-danger" />
+
                 <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="DeliveryMode.Name" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => DeliveryMode.Name" class="text-danger" />
+                    <label for="name" class="form-label">
+                        Name <span class="text-danger">*</span>
+                    </label>
+                    <InputText id="name"
+                               @bind-Value="DeliveryMode.Name"
+                               class="form-control"
+                               placeholder="e.g. Express Delivery" />
+                    <ValidationMessage For="() => DeliveryMode.Name"
+                                       class="text-danger" />
                 </div>
+
                 <div class="mb-3">
-                    <label for="details" class="form-label">Details:</label>
-                    <InputText id="details" @bind-Value="DeliveryMode.Details" class="form-control" />
-                    <ValidationMessage For="() => DeliveryMode.Details" class="text-danger" />
+                    <label for="details" class="form-label">Details</label>
+                    <InputText id="details"
+                               @bind-Value="DeliveryMode.Details"
+                               class="form-control"
+                               placeholder="Optional description" />
+                    <ValidationMessage For="() => DeliveryMode.Details"
+                                       class="text-danger" />
                 </div>
-                <div class="text-center mt-4">
-                    <button type="submit" class="btn btn-primary">Edit</button>
-                    <a class="btn btn-secondary" href="/deliverymodes">Back to List</a>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a class="btn btn-outline-secondary"
+                       href="/deliverymodes">
+                        ← Back
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save Changes
+                    </button>
                 </div>
             </EditForm>
         </div>

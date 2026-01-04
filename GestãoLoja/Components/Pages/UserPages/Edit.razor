@@ -13,76 +13,93 @@
 
 <PageTitle>Edit User</PageTitle>
 
-<h1>Edit User</h1>
-
 @if (User is null)
 {
-    <p><em>Loading...</em></p>
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Loading user…</p>
+    </div>
 }
 else
 {
-    <h1 class="mb-4 text-center">Edit User</h1>
-    <hr/>
-    <div class="container mb-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <EditForm method="post" Model="User"
-                          OnValidSubmit="UpdateUser" FormName="edit" Enhance>
-                    <DataAnnotationsValidator/>
-                    <ValidationSummary class="text-danger" role="alert"/>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="name" class="form-label">Name:</label>
-                        <InputText id="name" @bind-Value="User.Name" class="form-control" aria-required="true"/>
-                        <ValidationMessage For="() => User.Name" class="text-danger"/>
-                    </div>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="surname" class="form-label">Surname:</label>
-                        <InputText id="surname" @bind-Value="User.Surname" class="form-control" aria-required="true"/>
-                        <ValidationMessage For="() => User.Surname" class="text-danger"/>
-                    </div>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="email" class="form-label">Email:</label>
-                        <InputText id="email" @bind-Value="User.Email" class="form-control" aria-required="true"/>
-                        <ValidationMessage For="() => User.Email" class="text-danger"/>
-                    </div>
-                    <div class="mb-3">
-                        <span class="text-danger">*</span>
-                        <label for="imagedata" class="form-label">Image:</label>
-                        <InputFile id="imagedata" OnChange="OnImageChange" class="form-control"
-                                   accept=".png, .jpg, .jpeg"/>
-                        @if (_previewUrl is not null)
-                        {
-                            <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
-                        }
-                        <ValidationMessage For="() => User.ImageData" class="text-danger"/>
+    <div class="container my-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h2 class="text-center mb-4">Edit User</h2>
+                <hr />
+
+                <EditForm Model="User" OnValidSubmit="UpdateUser">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger mb-3" />
+
+                    <!-- Image preview -->
+                    <div class="text-center mb-4">
+                        <img class="rounded-circle mb-2"
+                             style="width:120px;height:120px;object-fit:cover"
+                             src="@GetPreviewImage()" />
+
+                        <InputFile OnChange="OnImageChange"
+                                   class="form-control mt-2"
+                                   accept=".png,.jpg,.jpeg" />
                     </div>
 
-                    <label class="form-label">Roles:</label>
-                    <div class="d-flex flex-wrap gap-3">
-                        @foreach (var role in Roles)
-                        {
-                            <div class="form-check me-3">
-                                <InputCheckbox @bind-Value="role.IsSelected"
-                                               class="form-check-input"/>
-                                <label>@role.Name.ToString()</label>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="/admin/users" class="btn btn-secondary">Back To List</a>
+                    <!-- User info -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Name *</label>
+                            <InputText class="form-control" @bind-Value="User.Name" />
+                            <ValidationMessage For="() => User.Name" />
                         </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Surname *</label>
+                            <InputText class="form-control" @bind-Value="User.Surname" />
+                            <ValidationMessage For="() => User.Surname" />
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Email *</label>
+                            <InputText class="form-control" @bind-Value="User.Email" />
+                            <ValidationMessage For="() => User.Email" />
+                        </div>
+                    </div>
+
+                    <!-- Roles -->
+                    <div class="border rounded p-3 mt-4">
+                        <h5 class="mb-3">Roles</h5>
+
+                        <div class="d-flex flex-wrap gap-3">
+                            @foreach (var role in Roles)
+                            {
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input"
+                                                   @bind-Value="role.IsSelected" />
+                                    <label class="form-check-label">
+                                        @role.Name
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-primary" type="submit">
+                            Save Changes
+                        </button>
+
+                        <a class="btn btn-outline-secondary"
+                           href="/admin/users">
+                            Cancel
+                        </a>
                     </div>
                 </EditForm>
             </div>
         </div>
     </div>
 }
+
 
 @code {
     [SupplyParameterFromQuery] private string Id { get; set; }
@@ -120,9 +137,11 @@ else
         var user = await UserManager.FindByIdAsync(User?.Id);
         if (user == null) return;
 
-        if (Roles.Find(model => model.Name == UserRoles.Supplier) is { IsSelected: true } &&
-            Roles.Find(model => model.Name == UserRoles.Client) is { IsSelected: true })
-            Roles.Find(model => model.Name == UserRoles.Client).IsSelected = false;
+        var supplier = Roles.First(r => r.Name == UserRoles.Supplier);
+        var client = Roles.First(r => r.Name == UserRoles.Client);
+
+        if (supplier.IsSelected)
+            client.IsSelected = false;
 
         user.Name = User.Name;
         user.Email = User.Email;
@@ -155,27 +174,32 @@ else
         // Redirect to users list after saving
         Nav.NavigateTo("/admin/users");
     }
-
-    private bool UserExists(string id)
-    {
-        using var context = DbFactory.CreateDbContext();
-        return context.Products.Any(e => e.Id.Equals(id));
-    }
-
+    
     private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        using var stream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(stream);
-        User.ImageData = stream.ToArray(); //Only saves bytes
 
-        //Creates pre visualization
-        using var previewStream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(previewStream);
-        var base64 = Convert.ToBase64String(previewStream.ToArray());
-        _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        if (file.Size > 2_000_000)
+            throw new InvalidOperationException("Image too large (max 2MB)");
+
+        using var stream = new MemoryStream();
+        await file.OpenReadStream(2_000_000).CopyToAsync(stream);
+
+        User!.ImageData = stream.ToArray();
+
+        _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(User.ImageData)}";
+    }
+    
+    private string GetPreviewImage()
+    {
+        if (_previewUrl is not null)
+            return _previewUrl;
+
+        return User?.ImageData is { Length: > 0 } ? 
+            $"data:image/png;base64,{Convert.ToBase64String(User.ImageData)}" : 
+            "/img/default-user.png";
     }
 
     public class RoleSelectionModel
