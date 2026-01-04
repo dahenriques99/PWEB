@@ -12,6 +12,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
+    public DbSet<DeliveryMode> DeliveryModes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,12 +31,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(pc => pc.Category)
             .WithMany(c => c.ProductCategories)
             .HasForeignKey(pc => pc.CategoryId);
-    
+        
+        /* ======================== CATEGORY ============================= */
+        modelBuilder.Entity<Category>()
+            .HasOne(c => c.ParentCategory)
+            .WithMany(c => c.SubCategories)
+            .HasForeignKey(c => c.ParentCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+            
         /* ======================== ORDER ============================= */
         modelBuilder.Entity<Order>()
             .HasOne(o => o.User)
             .WithMany(u => u.Orders)
             .HasForeignKey(o => o.UserId)
+            .IsRequired();
+        modelBuilder.Entity<Order>()
+            .HasOne(o => o.DeliveryMode)
+            .WithMany(dm => dm.Orders)
+            .HasForeignKey(o => o.DeliveryModeId)
             .IsRequired();
 
         /* ==================== ORDER ITEM ============================ */
@@ -61,5 +74,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(u => u.SuppliedProducts)
             .HasForeignKey(p => p.SupplierId)
             .IsRequired();
+        
+        /* ====================== DELIVERY MODE ========================== */
+        modelBuilder.Entity<DeliveryMode>()
+            .HasData(new DeliveryMode { Id = 1, Name = "Delivery" });
+        modelBuilder.Entity<DeliveryMode>()
+            .HasData(new DeliveryMode { Id = 2, Name = "Pickup" });
+        modelBuilder.Entity<DeliveryMode>()
+            .HasData(new DeliveryMode { Id = 3, Name = "Store Pickup" });
+        
+        
     }
 }

@@ -1,0 +1,73 @@
+﻿@page "/deliverymodes/create"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Delivery Mode</PageTitle>
+
+<h3 class="mb-3">Create Delivery Mode</h3>
+<p class="text-muted">
+    Define how orders can be delivered (e.g. Standard, Express, Pickup).
+</p>
+
+<hr />
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <EditForm Model="DeliveryMode"
+                  OnValidSubmit="AddDeliveryMode"
+                  FormName="create"
+                  Enhance>
+
+            <DataAnnotationsValidator />
+            <ValidationSummary class="alert alert-danger" />
+
+            <div class="mb-3">
+                <label for="name" class="form-label">
+                    Name <span class="text-danger">*</span>
+                </label>
+                <InputText id="name"
+                           @bind-Value="DeliveryMode.Name"
+                           class="form-control"
+                           placeholder="e.g. Express Delivery" />
+                <ValidationMessage For="() => DeliveryMode.Name" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="details" class="form-label">Details</label>
+                <InputText id="details"
+                           @bind-Value="DeliveryMode.Details"
+                           class="form-control"
+                           placeholder="Optional description or conditions" />
+                <ValidationMessage For="() => DeliveryMode.Details" class="text-danger" />
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a class="btn btn-outline-secondary"
+                   href="/deliverymodes">
+                    ← Back
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Create Delivery Mode
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private DeliveryMode DeliveryMode { get; set; } = new();
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddDeliveryMode()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.DeliveryModes.Add(DeliveryMode);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/deliverymodes");
+    }
+}

@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Http;
-using MyMedia.Infrastructure;
 using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
@@ -36,14 +35,13 @@ public class Product
     [Required(ErrorMessage = "The Product Stock is required")]
     [Range(0, int.MaxValue, ErrorMessage = "The Product Price cannot be negative")]
     public int Stock { get; set; }
-
     public byte[]? ImageData { get; set; }
     
     [NotMapped]
     public IFormFile? Image { get; set; }
     
     public ProductStatus Status { get; set; }
-
+    
     public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

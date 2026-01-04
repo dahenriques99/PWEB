@@ -1,0 +1,75 @@
+﻿@page "/deliverymodes/details"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+<PageTitle>Delivery Mode Details</PageTitle>
+
+@if (_deliverymode is null)
+{
+    <p class="text-muted"><em>Loading delivery mode…</em></p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">Delivery Mode Details</h3>
+            <small class="text-muted">
+                View information about this delivery option
+            </small>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <dl class="row">
+                <dt class="col-sm-4">Name</dt>
+                <dd class="col-sm-8">@_deliverymode.Name</dd>
+
+                <dt class="col-sm-4">Details</dt>
+                <dd class="col-sm-8">
+                    @if (string.IsNullOrWhiteSpace(_deliverymode.Details))
+                    {
+                        <span class="text-muted fst-italic">No details provided</span>
+                    }
+                    else
+                    {
+                        @_deliverymode.Details
+                    }
+                </dd>
+            </dl>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a class="btn btn-outline-secondary"
+                   href="/deliverymodes">
+                    ← Back
+                </a>
+
+                <a class="btn btn-primary"
+                   href="@($"/deliverymodes/edit?id={_deliverymode.Id}")">
+                    Edit
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DeliveryMode? _deliverymode;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+        _deliverymode = await context.DeliveryModes.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (_deliverymode is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

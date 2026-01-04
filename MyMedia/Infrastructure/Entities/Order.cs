@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using MyMedia.Infrastructure;
+using System.ComponentModel.DataAnnotations;
 using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure.Entities;
@@ -20,5 +19,9 @@ public class Order
 
     public DateTime Date { get; set; } = DateTime.UtcNow;
     
+    public int DeliveryModeId { get; set; }
+
+    public DeliveryMode? DeliveryMode { get; set; }
+
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

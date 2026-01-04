@@ -12,27 +12,62 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+        <!-- DASHBOARD -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu"></span>
+                Dashboard
             </NavLink>
         </div>
 
-        @* <div class="nav-item px-3"> *@
-        @*     <NavLink class="nav-link" href="counter"> *@
-        @*         <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter *@
-        @*     </NavLink> *@
-        @* </div> *@
+        <hr class="nav-divider" />
 
-        @* <div class="nav-item px-3"> *@
-        @*     <NavLink class="nav-link" href="weather"> *@
-        @*         <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather *@
-        @*     </NavLink> *@
-        @* </div> *@
+        <!-- STORE MANAGEMENT -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="orders">
+                <span class="bi bi-list-nested-nav-menu"></span>
+                Orders
+            </NavLink>
+        </div>
 
         <div class="nav-item px-3">
+            <NavLink class="nav-link" href="products">
+                <span class="bi bi-plus-square-fill-nav-menu"></span>
+                Products
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="categories">
+                <span class="bi bi-plus-square-fill-nav-menu"></span>
+                Categories
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="deliverymodes">
+                <span class="bi bi-plus-square-fill-nav-menu"></span>
+                Delivery Modes
+            </NavLink>
+        </div>
+
+        <hr class="nav-divider" />
+
+        <!-- USER MANAGEMENT -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="admin/users">
+                <span class="bi bi-person-nav-menu"></span>
+                Users
+            </NavLink>
+        </div>
+
+        <hr class="nav-divider" />
+
+        <!-- SECURITY -->
+        <div class="nav-item px-3">
             <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+                <span class="bi bi-lock-nav-menu"></span>
+                Authorization
             </NavLink>
         </div>
 

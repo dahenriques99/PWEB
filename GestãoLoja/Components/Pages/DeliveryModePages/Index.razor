@@ -1,0 +1,72 @@
+﻿@page "/deliverymodes"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure
+@implements IAsyncDisposable
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+
+<PageTitle>Delivery Modes</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0">Delivery Modes</h3>
+        <small class="text-muted">
+            Manage the available delivery options for orders
+        </small>
+    </div>
+
+    <a href="deliverymodes/create" class="btn btn-primary">
+        + Create Delivery Mode
+    </a>
+</div>
+
+<hr />
+
+<QuickGrid Class="table table-striped table-hover align-middle"
+           Items="_context.DeliveryModes">
+
+    <PropertyColumn Title="Name"
+                    Property="dm => dm.Name"
+                    Sortable="true" />
+    
+    <TemplateColumn Title="Details" Sortable="true">
+        @if (string.IsNullOrEmpty(context.Details))
+        {
+            @($"—")
+        }
+        else
+        {
+            @context.Details
+        }
+    </TemplateColumn>
+
+    <TemplateColumn Context="deliveryMode">
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="@($"deliverymodes/edit?id={deliveryMode.Id}")"
+               class="btn btn-outline-secondary">
+                Edit
+            </a>
+            <a href="@($"deliverymodes/details?id={deliveryMode.Id}")"
+               class="btn btn-outline-info">
+                Details
+            </a>
+            <a href="@($"deliverymodes/delete?id={deliveryMode.Id}")"
+               class="btn btn-outline-danger">
+                Delete
+            </a>
+        </div>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private ApplicationDbContext _context = default!;
+
+    protected override void OnInitialized()
+    {
+        _context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync()
+        => await _context.DisposeAsync();
+}

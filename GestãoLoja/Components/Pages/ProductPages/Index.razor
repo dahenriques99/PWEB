@@ -1,0 +1,183 @@
+﻿@page "/products"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using MyMedia.Infrastructure
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure.Entities.enums
+@implements IAsyncDisposable
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Products</PageTitle>
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Products</h2>
+        <a href="products/create" class="btn btn-primary">
+            + Create Product
+        </a>
+    </div>
+    
+    <hr />
+
+    @if (!_products.Any())
+    {
+        <div class="alert alert-info text-center">
+            No products found.
+        </div>
+    }
+    else
+    {
+        <div class="row mb-3 g-2">
+            <div class="col-md-3">
+                <InputText class="form-control"
+                           placeholder="Search products..."
+                           @bind-Value="_search" />
+            </div>
+
+            <div class="col-md-3">
+                <InputSelect class="form-select"
+                             @bind-Value="_categoryId">
+                    <option value="">All categories</option>
+                    @foreach (var category in _categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="col-md-2">
+                <InputNumber class="form-control"
+                             placeholder="Min €"
+                             @bind-Value="_minPrice" />
+            </div>
+
+            <div class="col-md-2">
+                <InputNumber class="form-control"
+                             placeholder="Max €"
+                             @bind-Value="_maxPrice" />
+            </div>
+            
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+        
+        <hr />
+
+        <QuickGrid Class="table table-striped align-middle"
+                   Items="FilteredProducts"
+                   TGridItem="Product">
+
+            <PropertyColumn Property="p => p.Name" Title="Name" Sortable="true" />
+            <PropertyColumn Property="p => p.Description" Title="Description" />
+            
+            <PropertyColumn Title="Price" Sortable="true"
+                            Property="p => p.Price"
+                            Format="C2" />
+
+            <PropertyColumn Title="Final Price" Sortable="true"
+                            Property="p => p.FinalPrice"
+                            Format="C2" />
+
+            <PropertyColumn Property="p => p.Stock" Title="Stock" Sortable="true" />
+
+            <TemplateColumn Title="Categories" Context="product">
+                @string.Join(", ",
+                    product.ProductCategories.Select(pc => pc.Category.Name))
+            </TemplateColumn>
+            
+            <TemplateColumn Title="Image" Context="product">
+                <div class="text-center">
+                    @if (product.ImageData is { Length: > 0 })
+                    {
+                        <img src="@($"data:image/png;base64,{Convert.ToBase64String(product.ImageData)}")"
+                             class="rounded"
+                             style="width:60px;height:60px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </div>
+            </TemplateColumn>
+
+            <TemplateColumn Context="product" Align="Align.End">
+                <div class="btn-group btn-group-sm" role="group">
+                    <a href="@($"products/edit?id={product.Id}")"
+                       class="btn btn-outline-secondary">
+                        Edit
+                    </a>
+                    <a href="@($"products/details?id={product.Id}")"
+                       class="btn btn-outline-info">
+                        Details
+                    </a>
+                    <a href="@($"products/delete?id={product.Id}")"
+                       class="btn btn-outline-danger">
+                        Delete
+                    </a>
+                </div>
+            </TemplateColumn>
+
+        </QuickGrid>
+    }
+</div>
+@code {
+    private ApplicationDbContext _context = default!;
+    private List<Product> _products = [];
+    private List<Category> _categories = [];
+    private string? _search;
+    private int? _categoryId;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
+    private string? _statusFilter;
+
+    private IQueryable<Product> FilteredProducts =>
+        _context.Products
+            .Include(p => p.ProductCategories)
+            .Where(p =>
+                (string.IsNullOrEmpty(_search) ||
+                 p.Name.Contains(_search)) &&
+
+                (!_categoryId.HasValue ||
+                 p.ProductCategories.Any(pc => pc.CategoryId == _categoryId)) &&
+
+                (!_minPrice.HasValue || p.Price >= _minPrice) &&
+                (!_maxPrice.HasValue || p.Price <= _maxPrice)
+            )
+            .OrderBy(p => p.Name);
+    
+    private void ClearFilters()
+    {
+        _search = null;
+        _statusFilter = null;
+        _categoryId = null;
+        _minPrice = null;
+        _maxPrice = null;
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await DbFactory.CreateDbContextAsync();
+
+        _products = await _context.Products
+            .AsNoTracking()
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+        
+        _categories = await _context.ProductCategories
+            .Select(pc => pc.Category)
+            .Distinct()
+            .OrderBy(c => c.Name)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _context.DisposeAsync();
+    }
+}

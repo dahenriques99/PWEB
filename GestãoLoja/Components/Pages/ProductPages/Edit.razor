@@ -1,0 +1,169 @@
+﻿@page "/products/edit"
+@attribute [Authorize(Roles = "Admin,Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager Nav
+
+<PageTitle>Edit Product</PageTitle>
+
+<div class="container my-4">
+    @if (Product is null)
+    {
+        <p class="text-muted text-center"><em>Loading product…</em></p>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3>Edit Product</h3>
+                <small class="text-muted">@Product.Name</small>
+            </div>
+
+            <div class="card-body">
+                <EditForm Model="Product" OnValidSubmit="UpdateProduct" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <!-- Left: Form -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <span class="text-danger">*</span>
+                                <label class="form-label">Name</label>
+                                <InputText @bind-Value="Product.Name" class="form-control" />
+                                <ValidationMessage For="() => Product.Name" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <InputText @bind-Value="Product.Description" class="form-control" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Price (€)</label>
+                                    <InputNumber @bind-Value="Product.Price" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Final Price (€)</label>
+                                    <InputNumber @bind-Value="Product.FinalPrice" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Stock</label>
+                                    <InputNumber @bind-Value="Product.Stock" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Image -->
+                        <div class="col-md-4">
+                            <label class="form-label">Product Image</label>
+
+                            <div class="mb-3 text-center">
+                                @if (_previewUrl is not null)
+                                {
+                                    <img src="@_previewUrl"
+                                         class="img-fluid rounded border mb-2"
+                                         style="max-height: 200px;" />
+                                }
+                                else if (Product.ImageData is not null)
+                                {
+                                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(Product.ImageData)}")"
+                                         class="img-fluid rounded border mb-2"
+                                         style="max-height: 200px;" />
+                                }
+                                else
+                                {
+                                    <div class="text-muted">No image</div>
+                                }
+                            </div>
+
+                            <InputFile OnChange="OnImageChange"
+                                       class="form-control"
+                                       accept=".png,.jpg,.jpeg" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            Save Changes
+                        </button>
+                        <a class="btn btn-secondary" href="/products">
+                            Cancel
+                        </a>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    private Product? Product;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        Product = await context.Products
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == Id);
+
+        if (Product is null)
+        {
+            Nav.NavigateTo("/notfound");
+        }
+    }
+
+    private async Task UpdateProduct()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        var existing = await context.Products.FindAsync(Product!.Id);
+        if (existing is null)
+        {
+            Nav.NavigateTo("/notfound");
+            return;
+        }
+
+        // Update only allowed fields
+        existing.Name = Product.Name;
+        existing.Description = Product.Description;
+        existing.Price = Product.Price;
+        existing.FinalPrice = Product.FinalPrice;
+        existing.Stock = Product.Stock;
+
+        if (Product.ImageData is not null)
+        {
+            existing.ImageData = Product.ImageData;
+        }
+
+        await context.SaveChangesAsync();
+        Nav.NavigateTo("/products");
+    }
+
+    private string? _previewUrl;
+
+    private async Task OnImageChange(InputFileChangeEventArgs e)
+    {
+        const long maxFileSize = 5 * 1024 * 1024;
+
+        using var stream = e.File.OpenReadStream(maxFileSize);
+        using var ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        Product!.ImageData = ms.ToArray();
+        _previewUrl = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(Product.ImageData)}";
+    }
+}
