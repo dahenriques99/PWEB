@@ -147,12 +147,22 @@ else
     
     protected override async Task OnInitializedAsync()
     {
-        await using var context = await DbContextFactory.CreateDbContextAsync();
+        await LoadUsers();
+        await LoadRoles();
+        _isLoading = false;
+    }
 
+    private async Task LoadUsers()
+    {
+        await using var context = await DbContextFactory.CreateDbContextAsync();
         _users = await context.Users
             .AsNoTracking()
             .ToListAsync();
+    }
 
+    private async Task LoadRoles()
+    {
+        await using var context = await DbContextFactory.CreateDbContextAsync();
         _userRoles = await context.UserRoles
             .Join(context.Roles,
                 ur => ur.RoleId,
@@ -163,8 +173,6 @@ else
                 g => g.Key,
                 g => g.Select(x => x.Name!).ToList()
             );
-        
-        _isLoading = false;
     }
     
     private bool IsAdmin(ApplicationUser user)
@@ -182,6 +190,8 @@ else
 
         entity.Status = UserStatus.Active;
         await context.SaveChangesAsync();
+
+        await LoadUsers();
     }
     
     private IEnumerable<string> GetUserRoles(ApplicationUser user)
@@ -200,6 +210,8 @@ else
 
         entity.Status = UserStatus.Inactive;
         await context.SaveChangesAsync();
+
+        await LoadUsers();
     }
 
     private void ClearFilters()
