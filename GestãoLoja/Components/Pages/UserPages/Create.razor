@@ -12,61 +12,83 @@
 
 <PageTitle>Gestão de Utilizadores</PageTitle>
 
-<h1 class="mb-4 text-center">Create User</h1>
-<hr/>
-<div class="container mb-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <EditForm method="post" Model="User" OnValidSubmit="AddUser" FormName="create">
-                <DataAnnotationsValidator/>
-                <ValidationSummary class="text-danger" role="alert"/>
+<div class="container my-5">
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <h2 class="text-center mb-4">Create User</h2>
+            <hr />
+
+            <EditForm Model="User" OnValidSubmit="AddUser">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <!-- User type -->
                 <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="clienttype" class="form-label">Supplier:</label>
-                    <InputSelect id="clienttype" @bind-Value="_clientType" class="form-select">
-                        <option value="">-- select --</option>
+                    <label class="form-label">
+                        User Type <span class="text-danger">*</span>
+                    </label>
+                    <InputSelect class="form-select" @bind-Value="_clientType">
+                        <option value="">-- Select type --</option>
                         @foreach (UserType type in Enum.GetValues(typeof(UserType)))
                         {
                             <option value="@type">@type</option>
                         }
                     </InputSelect>
                 </div>
-                <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="User.Name" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => User.Name" class="text-danger"/>
+
+                <!-- Image -->
+                <div class="text-center mb-4">
+                    <img class="rounded-circle mb-2"
+                         style="width:120px;height:120px;object-fit:cover"
+                         src="@GetPreviewImage()" />
+
+                    <InputFile OnChange="OnImageChange"
+                               class="form-control mt-2"
+                               accept=".png,.jpg,.jpeg" />
                 </div>
-                <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="surname" class="form-label">Surname:</label>
-                    <InputText id="surname" @bind-Value="User.Surname" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => User.Surname" class="text-danger"/>
+
+                <!-- User info -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Name *</label>
+                        <InputText class="form-control" @bind-Value="User.Name" />
+                        <ValidationMessage For="() => User.Name" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Surname *</label>
+                        <InputText class="form-control" @bind-Value="User.Surname" />
+                        <ValidationMessage For="() => User.Surname" />
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Email *</label>
+                        <InputText class="form-control" @bind-Value="User.Email" />
+                        <ValidationMessage For="() => User.Email" />
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="email" class="form-label">Email:</label>
-                    <InputText id="email" @bind-Value="User.Email" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => User.Email" class="text-danger"/>
+
+                <!-- Password hint -->
+                <div class="alert alert-info small">
+                    Default password will be: <strong>Password123!</strong><br />
+                    User should change it on first login.
                 </div>
-                <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="imagedata" class="form-label">Image:</label>
-                    <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
-                    @if (_previewUrl is not null)
-                    {
-                        <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
-                    }
-                    <ValidationMessage For="() => User.ImageData" class="text-danger"/>
-                </div>
-                <div class="text-center mt-4">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <a href="/admin/users" class="btn btn-secondary">Back To List</a>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-primary" type="submit">
+                        Create User
+                    </button>
+                    <a class="btn btn-outline-secondary" href="/admin/users">
+                        Cancel
+                    </a>
                 </div>
             </EditForm>
         </div>
     </div>
 </div>
+
 
 @code {
     [SupplyParameterFromForm] private ApplicationUser User { get; set; } = new();
@@ -87,30 +109,44 @@
             case UserType.Client:
                 await UserManager.AddToRoleAsync(User, nameof(UserRoles.Client));
                 break;
+
             case UserType.Supplier:
                 await UserManager.AddToRoleAsync(User, nameof(UserRoles.Supplier));
                 break;
+
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new InvalidOperationException("User type must be selected");
         }
+
 
         NavigationManager.NavigateTo("/admin/users");
     }
 
+    private string GetPreviewImage()
+    {
+        if (_previewUrl is not null)
+            return _previewUrl;
+
+        return User.ImageData is { Length: > 0 } ? 
+            $"data:image/png;base64,{Convert.ToBase64String(User.ImageData)}" : 
+            "/img/default-user.png";
+    }
+
+    
     private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        using var stream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(stream);
-        User.ImageData = stream.ToArray(); //Only saves bytes
 
-        //Creates pre visualization
-        using var previewStream = new MemoryStream();
-        await file.OpenReadStream().CopyToAsync(previewStream);
-        var base64 = Convert.ToBase64String(previewStream.ToArray());
-        _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        if (file.Size > 2_000_000)
+            throw new InvalidOperationException("Image too large (max 2MB)");
+
+        using var stream = new MemoryStream();
+        await file.OpenReadStream(2_000_000).CopyToAsync(stream);
+
+        User.ImageData = stream.ToArray();
+        _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(User.ImageData)}";
     }
 
 }

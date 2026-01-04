@@ -2,38 +2,116 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using MyMedia.Infrastructure
-@implements IAsyncDisposable
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure.Entities.enums
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 
 <PageTitle>Orders</PageTitle>
 
-<h1>Orders</h1>
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Orders</h1>
+    </div>
 
-<p>
-    <a href="orders/create" class="btn btn-primary">Create New</a>
-</p>
+    @if (_orders is null)
+    {
+        <p><em>Loading orders…</em></p>
+    }
+    else if (!_orders.Any())
+    {
+        <div class="alert alert-info">
+            No orders have been created yet.
+        </div>
+    }
+    else
+    {
+        <QuickGrid Items="_orders" Class="table table-striped table-hover align-middle">
+            <PropertyColumn Title="Customer"
+                            Property="o => o.User.Name"
+                            Sortable="true"/>
 
-<QuickGrid Class="table" Items="_context.Orders">
-    <PropertyColumn Property="order => order.UserId" />
-    <PropertyColumn Property="order => order.TotalAmount" />
-    <PropertyColumn Property="order => order.Status" />
-    <PropertyColumn Property="order => order.Date" />
-    <PropertyColumn Property="order => order.DeliveryModeId" />
+            <PropertyColumn Title="Total"
+                            Property="o => o.TotalAmount"
+                            Sortable="true"
+                            Format="0.00 €"/>
 
-    <TemplateColumn Context="order">
-        <a href="@($"orders/edit?id={order.Id}")">Edit</a> |
-        <a href="@($"orders/details?id={order.Id}")">Details</a> |
-        <a href="@($"orders/delete?id={order.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+            <TemplateColumn Title="Status" Sortable="true" Context="o">
+                <span class="badge @GetStatusClass(o.Status)">
+                    @GetStatusLabel(o.Status)
+                </span>
+            </TemplateColumn>
+            
+            <PropertyColumn Title="Date"
+                            Property="o => o.Date"
+                            Sortable="true"
+                            Format="dd/MM/yyyy HH:mm"/>
+
+            <PropertyColumn Title="Delivery"
+                            Property="o => o.DeliveryMode.Name"
+                            Sortable="true"/>
+
+            <TemplateColumn Context="order">
+                <div class="btn-group btn-group-sm">
+                    <a class="btn btn-outline-primary"
+                       href="@($"/orders/details?id={order.Id}")">
+                        Details
+                    </a>
+                    <a class="btn btn-outline-secondary"
+                       href="@($"/orders/edit?id={order.Id}")">
+                        Edit
+                    </a>
+                    <a class="btn btn-outline-danger"
+                       href="@($"/orders/delete?id={order.Id}")">
+                        Delete
+                    </a>
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+    }
+</div>
 
 @code {
-    private ApplicationDbContext _context = default!;
+    private ApplicationDbContext? _context;
+    private IQueryable<Order>? _orders;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _context = DbFactory.CreateDbContext();
+        _context = await DbFactory.CreateDbContextAsync();
+
+        _orders = _context.Orders
+            .Include(o => o.User)
+            .Include(o => o.DeliveryMode)
+            .OrderByDescending(o => o.Date);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+    private static string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.InCart => "In Cart",
+        OrderStatus.PendingPayment => "Pending Payment",
+        OrderStatus.PaymentFailed => "Payment Failed",
+        OrderStatus.PaymentAccepted => "Payment Accepted",
+        OrderStatus.Shipped => "Shipped",
+        OrderStatus.Completed => "Completed",
+        OrderStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+
+    private static string GetStatusClass(OrderStatus status) => status switch
+    {
+        OrderStatus.InCart => "bg-secondary",
+        OrderStatus.PendingPayment => "bg-warning text-dark",
+        OrderStatus.PaymentFailed => "bg-danger",
+        OrderStatus.PaymentAccepted => "bg-info",
+        OrderStatus.Shipped => "bg-primary",
+        OrderStatus.Completed => "bg-success",
+        OrderStatus.Cancelled => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_context is not null)
+            await _context.DisposeAsync();
+    }
+
 }

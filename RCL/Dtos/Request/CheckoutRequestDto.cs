@@ -3,6 +3,7 @@
 public sealed class CheckoutRequestDto
 {
     public List<CheckoutItemDto> Items { get; set; } = new();
+    public string? DeliveryMode { get; set; }
 }
 
 public sealed class CheckoutItemDto
