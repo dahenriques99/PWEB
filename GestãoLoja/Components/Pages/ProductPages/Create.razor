@@ -10,125 +10,155 @@
 
 <PageTitle>Create Product</PageTitle>
 
-<h1>Create Product</h1>
+<div class="container my-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h3>Create Product</h3>
+        </div>
 
-<hr/>
-<div class="container mb-4">
-    <div class="row justify-content-center">
-        <div class="col-md-4 col-lg-6">
-            <EditForm method="post" Model="Product" OnValidSubmit="AddProduct" FormName="create" Enhance>
-                <DataAnnotationsValidator/>
-                <ValidationSummary class="text-danger" role="alert"/>
+        <div class="card-body">
+            <EditForm Model="Product" OnValidSubmit="AddProduct">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <!-- Supplier -->
                 <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="supplierid" class="form-label">Supplier:</label>
-                    <InputSelect id="supplierid" @bind-Value="Product.SupplierId" class="form-select">
-                        <option value="">Select a Supplier</option>
-                        @foreach (var supplier in _suppliers)
+                    <label class="form-label">Supplier *</label>
+                    <InputSelect class="form-select" @bind-Value="Product.SupplierId">
+                        <option value="">-- Select supplier --</option>
+                        @foreach (var s in _suppliers)
                         {
-                            <option value="@supplier.Id">@supplier.Name</option>
+                            <option value="@s.Id">@s.Name</option>
                         }
                     </InputSelect>
-                    <ValidationMessage For="() => Product.SupplierId" class="text-danger"/>
+                    <ValidationMessage For="() => Product.SupplierId" />
                 </div>
+
+                <!-- Name -->
                 <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Name" class="text-danger"/>
+                    <label class="form-label">Name *</label>
+                    <InputText class="form-control" @bind-Value="Product.Name" />
+                    <ValidationMessage For="() => Product.Name" />
                 </div>
+
+                <!-- Description -->
                 <div class="mb-3">
-                    <label for="description" class="form-label">Description:</label>
-                    <InputText id="description" @bind-Value="Product.Description" class="form-control"/>
-                    <ValidationMessage For="() => Product.Description" class="text-danger"/>
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" rows="3"
+                                   @bind-Value="Product.Description" />
                 </div>
+
+                <!-- Prices -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Price (€) *</label>
+                        <InputNumber class="form-control"
+                                     @bind-Value="Product.Price"
+                                     step="0.01"
+                                     @oninput="SyncFinalPrice" />
+                        <ValidationMessage For="() => Product.Price" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Final Price (€) *</label>
+                        <InputNumber class="form-control"
+                                     @bind-Value="Product.FinalPrice"
+                                     step="0.01" />
+                        <ValidationMessage For="() => Product.FinalPrice" />
+                    </div>
+                </div>
+
+                <!-- Stock -->
                 <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="price" class="form-label">Price:</label>
-                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Price" class="text-danger"/>
+                    <label class="form-label">Stock *</label>
+                    <InputNumber class="form-control" @bind-Value="Product.Stock" />
+                    <ValidationMessage For="() => Product.Stock" />
                 </div>
+
+                <!-- Image -->
                 <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="finalprice" class="form-label">FinalPrice:</label>
-                    <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control"
-                                 aria-required="true"/>
-                    <ValidationMessage For="() => Product.FinalPrice" class="text-danger"/>
+                    <label class="form-label">Image</label>
+                    <InputFile class="form-control"
+                               OnChange="OnImageChange"
+                               accept=".jpg,.jpeg,.png" />
+
+                    <div class="mt-2">
+                        @if (_previewUrl is not null)
+                        {
+                            <img src="@_previewUrl"
+                                 class="rounded border"
+                                 style="max-width:200px;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="text-muted">No image selected</div>
+                        }
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <span class="text-danger">*</span>
-                    <label for="stock" class="form-label">Stock:</label>
-                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Stock" class="text-danger"/>
-                </div>
-                <div class="mb-3">
-                    <label for="imagedata" class="form-label">Image:</label>
-                    <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
-                    @if (_previewUrl is not null)
-                    {
-                        <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
-                    }
-                    else
-                    {
-                        <p>No image selected</p>
-                    }
-                    <ValidationMessage For="() => Product.ImageData" class="text-danger"/>
-                </div>
-                <div class="text-center mt-4">
-                    <button type="submit" class="btn btn-primary">Create</button>
-                    <a class="btn btn-secondary" href="/products">Back to List</a>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-primary" disabled="@_saving">
+                        @(_saving ? "Saving..." : "Create")
+                    </button>
+                    <a class="btn btn-secondary" href="/products">Cancel</a>
                 </div>
             </EditForm>
         </div>
     </div>
 </div>
 
+
 @code {
-    [SupplyParameterFromForm] private Product Product { get; set; } = new();
+    private Product Product { get; set; } = new();
     private List<ApplicationUser> _suppliers = new();
+    private bool _saving;
+    private string? _previewUrl;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        var query = context.Users.AsQueryable();
-        _suppliers = query.Where(u => context.UserRoles
-            .Where(ur => ur.UserId == u.Id)
-            .Join(context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-            .Contains(nameof(UserRoles.Supplier)))
-            .ToList();
+
+        var supplierRoleId = await context.Roles
+            .Where(r => r.Name == nameof(UserRoles.Supplier))
+            .Select(r => r.Id)
+            .FirstAsync();
+
+        _suppliers = await context.Users
+            .Where(u => context.UserRoles.Any(ur =>
+                ur.UserId == u.Id && ur.RoleId == supplierRoleId))
+            .AsNoTracking()
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+    }
+
+    private void SyncFinalPrice(ChangeEventArgs _)
+    {
+        if (Product.FinalPrice <= 0 || Product.FinalPrice < Product.Price)
+            Product.FinalPrice = Product.Price;
     }
 
     private async Task AddProduct()
     {
+        _saving = true;
+
         await using var context = await DbFactory.CreateDbContextAsync();
-        
         context.Products.Add(Product);
         await context.SaveChangesAsync();
 
         Nav.NavigateTo("/products");
     }
 
-    private string? _previewUrl;
-
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
+        const long maxSize = 5 * 1024 * 1024;
         var file = e.File;
 
-        // Allow up to 5 MB (adjust if needed)
-        const long maxFileSize = 5 * 1024 * 1024;
-
-        using var stream = file.OpenReadStream(maxFileSize);
+        using var stream = file.OpenReadStream(maxSize);
         using var ms = new MemoryStream();
-
         await stream.CopyToAsync(ms);
 
-        var bytes = ms.ToArray();
-
-        // Save to entity
-        Product.ImageData = bytes;
-
-        // Create preview
-        var base64 = Convert.ToBase64String(bytes);
-        _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        Product.ImageData = ms.ToArray();
+        _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(Product.ImageData)}";
     }
 }

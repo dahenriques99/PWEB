@@ -1,47 +1,72 @@
 ﻿@page "/categories"
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
-@using MyMedia.Infrastructure
-@implements IAsyncDisposable
+@using MyMedia.Infrastructure.Entities
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 
 <PageTitle>Categories</PageTitle>
 
-<h1>Categories</h1>
+<h1 class="mb-3">Categories</h1>
 
-<p>
-    <a href="categories/create" class="btn btn-primary">Create New</a>
-</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted">
+        Manage your categories
+    </span>
 
-<QuickGrid Class="table" Items="_context.Categories">
-    <PropertyColumn Property="category => category.Name"/>
-    <PropertyColumn Property="category => category.Description"/>
-    
-    <TemplateColumn Title="Parent Category" Context="category">
-        @if (category.ParentCategory is null)
+    <a class="btn btn-primary" href="/categories/create">
+        + Create Category
+    </a>
+</div>
+
+<QuickGrid Items="_categories" Class="table table-striped align-middle" Virtualize="true">
+    <PropertyColumn Property="c => c.Name" Sortable="true" />
+    <PropertyColumn Property="c => c.Description" />
+
+    <TemplateColumn Title="Parent Category" Sortable="true">
+        @if (string.IsNullOrEmpty(context.ParentCategory?.Name))
         {
-            <span>None</span>
+            @($"—")
         }
         else
         {
-            @category.ParentCategory.Name
+            @context.ParentCategory?.Name
         }
     </TemplateColumn>
 
-    <TemplateColumn Context="category">
-        <a href="@($"categories/edit?id={category.Id}")">Edit</a> |
-        <a href="@($"categories/details?id={category.Id}")">Details</a> |
-        <a href="@($"categories/delete?id={category.Id}")">Delete</a>
+    <TemplateColumn Title="Actions" Context="category">
+        <div class="btn-group btn-group-sm" role="group">
+            <a class="btn btn-outline-secondary"
+               href="@($"/categories/edit?id={category.Id}")">
+                Edit
+            </a>
+            <a class="btn btn-outline-info"
+               href="@($"/categories/details?id={category.Id}")">
+                Details
+            </a>
+            <a class="btn btn-outline-danger"
+               href="@($"/categories/delete?id={category.Id}")">
+                Delete
+            </a>
+        </div>
     </TemplateColumn>
 </QuickGrid>
 
+@if (!_categories.Any())
+{
+    <div class="alert alert-info mt-3">
+        No categories found. Create your first one!
+    </div>
+}
+
 @code {
-    private ApplicationDbContext _context = default!;
+    private IQueryable<Category> _categories = Enumerable.Empty<Category>().AsQueryable();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _context = DbFactory.CreateDbContext();
-    }
+        var context = await DbFactory.CreateDbContextAsync();
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+        _categories = context.Categories
+            .Include(c => c.ParentCategory)
+            .AsNoTracking();
+    }
 }

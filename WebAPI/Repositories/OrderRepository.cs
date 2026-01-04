@@ -69,7 +69,8 @@ public class OrderRepository(ApplicationDbContext dbContext) : IOrderRepository
             Status = OrderStatus.PendingPayment,
             Date = now,
             TotalAmount = 0m,
-            OrderItems = new List<OrderItem>()
+            OrderItems = new List<OrderItem>(),
+            DeliveryModeId = 1
         };
 
         decimal total = 0m;
