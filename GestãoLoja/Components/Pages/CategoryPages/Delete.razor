@@ -64,16 +64,23 @@ else
                         subcategories and cannot be deleted.
                     </dd>
                 }
+                
+                @if (_isUsedByProducts)
+                {
+                    <dt class="col-sm-3 text-danger">Warning</dt>
+                    <dd class="col-sm-9 text-danger">
+                        This category is currently being used by one or more products so it cannot be removed.
+                    </dd>
+                }
             </dl>
         </div>
 
         <div class="card-footer d-flex gap-2">
             <button class="btn btn-danger"
                     @onclick="DeleteCategory"
-                    disabled="@_category.SubCategories.Any()">
+                    disabled="@(_category.SubCategories.Any() || _isUsedByProducts)">
                 Delete
             </button>
-
             <a href="/categories" class="btn btn-secondary">
                 Cancel
             </a>
@@ -84,9 +91,9 @@ else
 @code {
     private Category? _category;
     private bool _isLoading = true;
+    private bool _isUsedByProducts;
 
-    [SupplyParameterFromQuery]
-    private int Id { get; set; }
+    [SupplyParameterFromQuery] private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,18 +112,27 @@ else
         }
 
         _isLoading = false;
+
+        _isUsedByProducts = await context.ProductCategories
+            .AnyAsync(pc => pc.CategoryId == _category.Id);
     }
 
     private async Task DeleteCategory()
     {
-        if (_category is null || _category.SubCategories.Any())
-            return;
+        if (_category is null) return;
 
         await using var context = await DbFactory.CreateDbContextAsync();
+
+        var hasChildren = await context.Categories.AnyAsync(c => c.ParentCategoryId == _category.Id);
+        var usedByProducts = await context.ProductCategories.AnyAsync(pc => pc.CategoryId == _category.Id);
+
+        if (hasChildren || usedByProducts)
+            return; // or show an error message
 
         context.Categories.Remove(new Category { Id = _category.Id });
         await context.SaveChangesAsync();
 
         NavigationManager.NavigateTo("/categories");
     }
+
 }

@@ -1,10 +1,10 @@
 ﻿@page "/orders"
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities
 @using MyMedia.Infrastructure.Entities.enums
-@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
 <PageTitle>Orders</PageTitle>
 
@@ -23,7 +23,7 @@
     <div class="col-md-4">
         <InputText class="form-control"
                    placeholder="Search by user email..."
-                   @bind-Value="_search" />
+                   @bind-Value="_search"/>
     </div>
 
     <div class="col-md-3">
@@ -39,7 +39,7 @@
 
     <div class="col-md-3">
         <InputDate class="form-control"
-                   @bind-Value="_fromDate" />
+                   @bind-Value="_fromDate"/>
     </div>
 
     <div class="col-md-2">
@@ -91,17 +91,9 @@ else
 
         <TemplateColumn Context="order" Align="Align.End">
             <div class="btn-group btn-group-sm" role="group">
-                <a class="btn btn-outline-secondary"
-                   href="@($"/orders/edit?id={order.Id}")">
-                    Edit
-                </a>
                 <a class="btn btn-outline-info"
                    href="@($"/orders/details?id={order.Id}")">
                     Details
-                </a>
-                <a class="btn btn-outline-danger"
-                   href="@($"/orders/delete?id={order.Id}")">
-                    Delete
                 </a>
             </div>
         </TemplateColumn>
@@ -111,7 +103,7 @@ else
 @code {
     private ApplicationDbContext? _context;
     private IQueryable<Order>? _orders;
-    
+
     private string? _search;
     private OrderStatus? _statusFilter;
     private DateTime? _fromDate;
@@ -123,15 +115,13 @@ else
             .Where(o =>
                 (string.IsNullOrEmpty(_search) ||
                  o.User.Email!.Contains(_search)) &&
-
                 (!_statusFilter.HasValue ||
                  o.Status == _statusFilter) &&
-
                 (!_fromDate.HasValue ||
                  o.Date >= _fromDate)
             )
             .OrderByDescending(o => o.Date);
-    
+
     protected override async Task OnInitializedAsync()
     {
         _context = await DbFactory.CreateDbContextAsync();
@@ -172,7 +162,7 @@ else
         _fromDate = null;
         _search = null;
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         if (_context is not null)

@@ -8,9 +8,11 @@ public class OrderDetailsDto : OrderSummaryDto
         public string Name { get; set; } = default!;
         public decimal Price { get; set; }
         public int Quantity { get; set; }
+        public byte[]? ImageData { get; set; }
     }
 
     public List<OrderLineDto> Items { get; set; } = new();
+    public String DeliveryMode { get; set; }
 }
 
 public class OrderSummaryDto

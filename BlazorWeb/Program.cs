@@ -12,7 +12,7 @@ builder.Services.AddHttpClient<RestService>(client =>
 
 builder.Services.AddProtectedBrowserStorage();
 builder.Services.AddScoped<ProtectedSessionStorage>();
-builder.Services.AddScoped<ITokenStore, ProtectedSessionTokenStore>();
+builder.Services.AddScoped<IKeyValueStore, ProtectedSessionTokenStore>();
 
 builder.Services.AddScoped<AuthStateService>();
 builder.Services.AddScoped<CartService>();

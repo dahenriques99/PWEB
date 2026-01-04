@@ -29,7 +29,13 @@ else
                 <strong>Warning:</strong>
                 You are about to permanently delete this delivery mode.
             </div>
-
+            @if (_isUsed)
+            {
+                <div class="alert alert-danger">
+                    <strong>Danger:</strong>
+                    This product cannot be deleted because it is associated with existing orders.
+                </div>
+            }
             <dl class="row">
                 <dt class="col-sm-4">Name</dt>
                 <dd class="col-sm-8">@_deliveryMode.Name</dd>
@@ -59,7 +65,7 @@ else
                     </a>
 
                     <button type="submit"
-                            class="btn btn-danger">
+                            class="btn btn-danger" disabled="@_isUsed">
                         Delete
                     </button>
                 </div>
@@ -70,6 +76,7 @@ else
 
 @code {
     private DeliveryMode? _deliveryMode;
+    private bool _isUsed; 
 
     [SupplyParameterFromQuery]
     private int Id { get; set; }
@@ -83,6 +90,7 @@ else
         {
             NavigationManager.NavigateTo("notfound");
         }
+        _isUsed = await context.Orders.AnyAsync(o => o.DeliveryModeId == _deliveryMode.Id);
     }
 
     private async Task DeleteDeliveryMode()

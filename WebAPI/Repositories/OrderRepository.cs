@@ -16,15 +16,17 @@ public sealed class CheckoutResult
 
 public interface IOrderRepository
 {
-    Task<CheckoutResult> CreateOrderFromCart(string userId, List<CheckoutItemDto> items);
+    Task<CheckoutResult> CreateOrderFromCart(string userId, CheckoutRequestDto requestDto);
+    Task<OrderDetailsDto?> GetOrderDetails(int orderId, string userId);
 }
 
 public class OrderRepository(ApplicationDbContext dbContext) : IOrderRepository
 {
     public async Task<CheckoutResult> CreateOrderFromCart(
         string userId,
-        List<CheckoutItemDto> items)
+        CheckoutRequestDto requestDto)
     {
+        List<CheckoutItemDto> items = requestDto.Items;
         var errors = new List<string>();
 
         // 1) sanitize + merge duplicates
@@ -70,11 +72,12 @@ public class OrderRepository(ApplicationDbContext dbContext) : IOrderRepository
             Date = now,
             TotalAmount = 0m,
             OrderItems = new List<OrderItem>(),
-            DeliveryModeId = 1
+            DeliveryModeId = requestDto.DeliveryMode
         };
 
         decimal total = 0m;
 
+        // 6) add orderItem to order and calculate total
         foreach (var product in clean)
         {
             var p = products.First(x => x.Id == product.ProductId);
@@ -109,5 +112,29 @@ public class OrderRepository(ApplicationDbContext dbContext) : IOrderRepository
                 Status = order.Status.ToString()
             }
         };
+    }
+    
+    public async Task<OrderDetailsDto?> GetOrderDetails(int orderId, string userId)
+    {
+        return await dbContext.Orders
+            .AsNoTracking()
+            .Where(o => o.Id == orderId && o.UserId == userId)
+            .Select(o => new OrderDetailsDto
+            {
+                OrderId = o.Id,
+                Date = o.Date,
+                TotalAmount = o.TotalAmount,
+                Status = o.Status.ToString(),
+                DeliveryMode = o.DeliveryMode.Name,
+                Items = o.OrderItems.Select(oi => new OrderDetailsDto.OrderLineDto
+                {
+                    ProductId = oi.ProductId,
+                    Name = oi.Product.Name,
+                    Price = oi.Price,
+                    Quantity = oi.Quantity,
+                    ImageData = oi.Product.ImageData
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
     }
 }

@@ -12,7 +12,7 @@ using MyMedia.Infrastructure;
 namespace MyMedia.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260103225429_Initial")]
+    [Migration("20260104143724_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

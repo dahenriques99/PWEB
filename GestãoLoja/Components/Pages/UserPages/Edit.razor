@@ -10,6 +10,9 @@
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+
 
 <PageTitle>Edit User</PageTitle>
 
@@ -27,41 +30,41 @@ else
             <div class="card-body">
 
                 <h2 class="text-center mb-4">Edit User</h2>
-                <hr />
+                <hr/>
 
                 <EditForm Model="User" OnValidSubmit="UpdateUser">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary class="text-danger mb-3" />
+                    <DataAnnotationsValidator/>
+                    <ValidationSummary class="text-danger mb-3"/>
 
                     <!-- Image preview -->
                     <div class="text-center mb-4">
                         <img class="rounded-circle mb-2"
                              style="width:120px;height:120px;object-fit:cover"
-                             src="@GetPreviewImage()" />
+                             src="@GetPreviewImage()"/>
 
                         <InputFile OnChange="OnImageChange"
                                    class="form-control mt-2"
-                                   accept=".png,.jpg,.jpeg" />
+                                   accept=".png,.jpg,.jpeg"/>
                     </div>
 
                     <!-- User info -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Name *</label>
-                            <InputText class="form-control" @bind-Value="User.Name" />
-                            <ValidationMessage For="() => User.Name" />
+                            <InputText class="form-control" @bind-Value="User.Name"/>
+                            <ValidationMessage For="() => User.Name"/>
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Surname *</label>
-                            <InputText class="form-control" @bind-Value="User.Surname" />
-                            <ValidationMessage For="() => User.Surname" />
+                            <InputText class="form-control" @bind-Value="User.Surname"/>
+                            <ValidationMessage For="() => User.Surname"/>
                         </div>
 
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Email *</label>
-                            <InputText class="form-control" @bind-Value="User.Email" />
-                            <ValidationMessage For="() => User.Email" />
+                            <InputText class="form-control" @bind-Value="User.Email"/>
+                            <ValidationMessage For="() => User.Email"/>
                         </div>
                     </div>
 
@@ -74,7 +77,8 @@ else
                             {
                                 <div class="form-check">
                                     <InputCheckbox class="form-check-input"
-                                                   @bind-Value="role.IsSelected" />
+                                                   @bind-Value="role.IsSelected"
+                                                   disabled="@(_isSelfEdit && (role.Name == UserRoles.Admin || role.Name == UserRoles.Employee))"/>
                                     <label class="form-check-label">
                                         @role.Name
                                     </label>
@@ -104,12 +108,21 @@ else
 @code {
     [SupplyParameterFromQuery] private string Id { get; set; }
 
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
     private ApplicationUser? User { get; set; }
 
     private List<RoleSelectionModel> Roles { get; } = new();
 
+    private string? _currentUserId;
+    private bool _isSelfEdit;
+    private List<string> _errors = new();
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateTask;
+        _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         await using var context = await DbFactory.CreateDbContextAsync();
         User = await context.Users.FindAsync(Id);
         if (User is null)
@@ -117,7 +130,7 @@ else
             Nav.NavigateTo("notfound");
             return;
         }
-        
+
         // Get the user's current roles
         var userRoles = await UserManager.GetRolesAsync(User);
 
@@ -130,20 +143,47 @@ else
                 IsSelected = userRoles.Contains(role.ToString())
             });
         }
+
+        _isSelfEdit = !string.IsNullOrWhiteSpace(_currentUserId)
+                      && string.Equals(_currentUserId, User.Id, StringComparison.Ordinal);
     }
 
     private async Task UpdateUser()
     {
+        _errors.Clear();
+
         var user = await UserManager.FindByIdAsync(User?.Id);
         if (user == null) return;
 
         var supplier = Roles.First(r => r.Name == UserRoles.Supplier);
         var client = Roles.First(r => r.Name == UserRoles.Client);
+        if (supplier.IsSelected) client.IsSelected = false;
 
-        if (supplier.IsSelected)
-            client.IsSelected = false;
+        _isSelfEdit = !string.IsNullOrWhiteSpace(_currentUserId)
+                      && string.Equals(_currentUserId, user.Id, StringComparison.Ordinal);
 
-        user.Name = User.Name;
+        if (_isSelfEdit)
+        {
+            var existingRoles = await UserManager.GetRolesAsync(user);
+
+            bool currentlyAdmin = existingRoles.Contains(nameof(UserRoles.Admin));
+            bool currentlyEmployee = existingRoles.Contains(nameof(UserRoles.Employee));
+
+            bool wantsAdmin = Roles.First(r => r.Name == UserRoles.Admin).IsSelected;
+            bool wantsEmployee = Roles.First(r => r.Name == UserRoles.Employee).IsSelected;
+
+            if (currentlyAdmin && !wantsAdmin)
+                _errors.Add("You cannot remove your own Admin role.");
+
+            if (currentlyEmployee && !wantsEmployee)
+                _errors.Add("You cannot remove your own Employee role.");
+
+            if (_errors.Any())
+                return;
+        }
+        
+        user.Name = User!.Name;
+        user.Surname = User.Surname; 
         user.Email = User.Email;
         user.UserName = User.Email;
         user.PhoneNumber = User.PhoneNumber;
@@ -151,30 +191,39 @@ else
         var result = await UserManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            // Handle error updating user
+            _errors.AddRange(result.Errors.Select(e => e.Description));
             return;
         }
 
-        // Get the user's current roles
-        var userRoles = await UserManager.GetRolesAsync(User!);
-        var rolesToRemove = userRoles.Except(
-            Roles
-                .Where(r => r.IsSelected)
-                .Select(r => r.Name.ToString())
-        ).ToList();
-        await UserManager.RemoveFromRolesAsync(user!, rolesToRemove);
-        
-        var rolesToAdd = Roles
-            .Where(r => r.IsSelected)
-            .Select(r => r.Name.ToString())
-            .Except(userRoles)
-            .ToList();
-        await UserManager.AddToRolesAsync(user!, rolesToAdd);
+        var userRoles = await UserManager.GetRolesAsync(user);
 
-        // Redirect to users list after saving
+        var desiredRoles = Roles.Where(r => r.IsSelected).Select(r => r.Name.ToString()).ToList();
+
+        var rolesToRemove = userRoles.Except(desiredRoles).ToList();
+        if (rolesToRemove.Any())
+        {
+            var rem = await UserManager.RemoveFromRolesAsync(user, rolesToRemove);
+            if (!rem.Succeeded)
+            {
+                _errors.AddRange(rem.Errors.Select(e => e.Description));
+                return;
+            }
+        }
+
+        var rolesToAdd = desiredRoles.Except(userRoles).ToList();
+        if (rolesToAdd.Any())
+        {
+            var add = await UserManager.AddToRolesAsync(user, rolesToAdd);
+            if (!add.Succeeded)
+            {
+                _errors.AddRange(add.Errors.Select(e => e.Description));
+                return;
+            }
+        }
+
         Nav.NavigateTo("/admin/users");
     }
-    
+
     private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
@@ -191,15 +240,13 @@ else
 
         _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(User.ImageData)}";
     }
-    
+
     private string GetPreviewImage()
     {
         if (_previewUrl is not null)
             return _previewUrl;
 
-        return User?.ImageData is { Length: > 0 } ? 
-            $"data:image/png;base64,{Convert.ToBase64String(User.ImageData)}" : 
-            "/img/default-user.png";
+        return User?.ImageData is { Length: > 0 } ? $"data:image/png;base64,{Convert.ToBase64String(User.ImageData)}" : "/img/default-user.png";
     }
 
     public class RoleSelectionModel

@@ -58,11 +58,9 @@
 
                 <div class="d-flex gap-2 mt-4">
                     <button type="submit"
-                            class="btn btn-primary"
-                            disabled="_isSaving">
-                        @(_isSaving ? "Creating..." : "Create")
+                            class="btn btn-primary">
+                        Create
                     </button>
-
                     <a class="btn btn-secondary" href="/categories">
                         Cancel
                     </a>
@@ -78,7 +76,6 @@
 
     private List<Category> _categories = new();
     private bool _isLoading = true;
-    private bool _isSaving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,7 +91,6 @@
 
     private async Task AddCategory()
     {
-        _isSaving = true;
 
         await using var context = await DbFactory.CreateDbContextAsync();
         context.Categories.Add(Category);
