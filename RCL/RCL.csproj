@@ -5,8 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
-
-
+    
     <ItemGroup>
         <SupportedPlatform Include="browser" />
     </ItemGroup>
@@ -27,12 +26,6 @@
 
     <ItemGroup>
       <None Include="wwwroot\isecLogo.png" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="Microsoft.AspNetCore.Components.Server">
-        <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.21\Microsoft.AspNetCore.Components.Server.dll</HintPath>
-      </Reference>
     </ItemGroup>
 
 </Project>
