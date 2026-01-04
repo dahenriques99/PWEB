@@ -1,0 +1,122 @@
+﻿@page "/categories/delete"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete Category</PageTitle>
+
+<h1 class="text-danger mb-3">Delete Category</h1>
+
+<p class="text-muted">
+    This action is <strong>irreversible</strong>. Please confirm before proceeding.
+</p>
+
+@if (_isLoading)
+{
+    <p><em>Loading category...</em></p>
+}
+else if (_category is null)
+{
+    <p class="text-danger">Category not found.</p>
+}
+else
+{
+    <div class="card border-danger">
+        <div class="card-body">
+            <h5 class="card-title text-danger mb-3">
+                Are you sure you want to delete this category?
+            </h5>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">@_category.Name</dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">
+                    @if (string.IsNullOrWhiteSpace(_category.Description))
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                    else
+                    {
+                        @_category.Description
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Parent Category</dt>
+                <dd class="col-sm-9">
+                    @if (_category.ParentCategory is null)
+                    {
+                        <span class="text-muted">None</span>
+                    }
+                    else
+                    {
+                        @_category.ParentCategory.Name
+                    }
+                </dd>
+
+                @if (_category.SubCategories.Any())
+                {
+                    <dt class="col-sm-3 text-danger">Warning</dt>
+                    <dd class="col-sm-9 text-danger">
+                        This category has <strong>@_category.SubCategories.Count</strong>
+                        subcategories and cannot be deleted.
+                    </dd>
+                }
+            </dl>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <button class="btn btn-danger"
+                    @onclick="DeleteCategory"
+                    disabled="@_category.SubCategories.Any()">
+                Delete
+            </button>
+
+            <a href="/categories" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private Category? _category;
+    private bool _isLoading = true;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        _category = await context.Categories
+            .Include(c => c.ParentCategory)
+            .Include(c => c.SubCategories)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == Id);
+
+        if (_category is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task DeleteCategory()
+    {
+        if (_category is null || _category.SubCategories.Any())
+            return;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        context.Categories.Remove(new Category { Id = _category.Id });
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/categories");
+    }
+}

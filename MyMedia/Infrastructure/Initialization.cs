@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MyMedia.Infrastructure.Entities;
+using MyMedia.Infrastructure.Entities.enums;
 
 namespace MyMedia.Infrastructure;
 
@@ -11,17 +12,15 @@ public static class Initialization
         RoleManager<IdentityRole> roleManager,
         ApplicationDbContext db)
     {
-        string[] roles = ["Admin", "Worker", "Gestor", "Client"];
-
-        foreach (var role in roles)
+        foreach (UserRoles userRole in Enum.GetValues(typeof(UserRoles)))
         {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                var result = await roleManager.CreateAsync(new IdentityRole(role));
-                if (!result.Succeeded)
-                    throw new Exception($"Failed to create role {role}: " +
-                                        string.Join("; ", result.Errors.Select(e => e.Description)));
-            }
+            var role = userRole.ToString();
+            if (await roleManager.RoleExistsAsync(role)) continue;
+            
+            var result = await roleManager.CreateAsync(new IdentityRole(role));
+            if (!result.Succeeded)
+                throw new Exception($"Failed to create role {role}: " +
+                                    string.Join("; ", result.Errors.Select(e => e.Description)));
         }
 
         await EnsureUser(
@@ -30,7 +29,7 @@ public static class Initialization
             password: "Is3C..00",
             name: "Administrador",
             surname: "Local",
-            role: "Admin");
+            role: nameof(UserRoles.Admin));
 
         await EnsureUser(
             userManager,
@@ -38,7 +37,7 @@ public static class Initialization
             password: "Is3C..00",
             name: "Gestor",
             surname: "Local",
-            role: "Gestor");
+            role: nameof(UserRoles.Supplier));
 
         if (!await db.Categories.AnyAsync())
         {

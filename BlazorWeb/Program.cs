@@ -10,6 +10,7 @@ builder.Services.AddHttpClient<RestService>(client =>
     client.BaseAddress = new Uri("https://localhost:7124/");
 });
 
+builder.Services.AddProtectedBrowserStorage();
 builder.Services.AddScoped<ProtectedSessionStorage>();
 builder.Services.AddScoped<ITokenStore, ProtectedSessionTokenStore>();
 

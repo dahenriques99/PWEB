@@ -1,0 +1,105 @@
+﻿@page "/categories/create"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+<PageTitle>Create Category</PageTitle>
+
+<h1 class="mb-3">Create Category</h1>
+
+<p class="text-muted">
+    Create a new category. You can optionally assign a parent category.
+</p>
+
+<div class="row">
+    <div class="col-md-6 col-lg-4">
+        @if (_isLoading)
+        {
+            <p><em>Loading categories...</em></p>
+        }
+        else
+        {
+            <EditForm Model="Category" OnValidSubmit="AddCategory">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">
+                        Name <span class="text-danger">*</span>
+                    </label>
+                    <InputText id="name"
+                               class="form-control"
+                               @bind-Value="Category.Name" />
+                    <ValidationMessage For="() => Category.Name" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <InputText id="description"
+                               class="form-control"
+                               @bind-Value="Category.Description" />
+                    <ValidationMessage For="() => Category.Description" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="parentCategory" class="form-label">
+                        Parent Category
+                    </label>
+                    <InputSelect id="parentCategory"
+                                 class="form-select"
+                                 @bind-Value="Category.ParentCategoryId">
+                        <option value="">— None —</option>
+                        @foreach (var category in _categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            disabled="_isSaving">
+                        @(_isSaving ? "Creating..." : "Create")
+                    </button>
+
+                    <a class="btn btn-secondary" href="/categories">
+                        Cancel
+                    </a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Category Category { get; set; } = new();
+
+    private List<Category> _categories = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        _categories = await context.Categories
+            .AsNoTracking()
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+
+        _isLoading = false;
+    }
+
+    private async Task AddCategory()
+    {
+        _isSaving = true;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Categories.Add(Category);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/categories");
+    }
+}

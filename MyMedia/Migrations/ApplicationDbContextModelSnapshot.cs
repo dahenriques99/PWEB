@@ -15,7 +15,6 @@ namespace MyMedia.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
-#pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -263,7 +262,48 @@ namespace MyMedia.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ParentCategoryId");
+
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.DeliveryMode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeliveryModes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Delivery"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Pickup"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Store Pickup"
+                        });
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
@@ -277,6 +317,9 @@ namespace MyMedia.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DeliveryModeId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -288,6 +331,8 @@ namespace MyMedia.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryModeId");
 
                     b.HasIndex("UserId");
 
@@ -316,6 +361,21 @@ namespace MyMedia.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems");
+                });
+
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProductId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("ProductCategories");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
@@ -427,13 +487,31 @@ namespace MyMedia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
+                {
+                    b.HasOne("MyMedia.Infrastructure.Entities.Category", "ParentCategory")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("ParentCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ParentCategory");
+                });
+
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
                 {
+                    b.HasOne("MyMedia.Infrastructure.Entities.DeliveryMode", "DeliveryMode")
+                        .WithMany("Orders")
+                        .HasForeignKey("DeliveryModeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("MyMedia.Infrastructure.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("DeliveryMode");
 
                     b.Navigation("User");
                 });
@@ -497,6 +575,13 @@ namespace MyMedia.Migrations
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Category", b =>
                 {
                     b.Navigation("ProductCategories");
+
+                    b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("MyMedia.Infrastructure.Entities.DeliveryMode", b =>
+                {
+                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Order", b =>
@@ -510,7 +595,6 @@ namespace MyMedia.Migrations
 
                     b.Navigation("ProductCategories");
                 });
-#pragma warning restore 612, 618
         }
     }
 }

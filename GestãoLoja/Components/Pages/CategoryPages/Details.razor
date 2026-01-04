@@ -1,0 +1,95 @@
+﻿@page "/categories/details"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+<PageTitle>Category Details</PageTitle>
+
+<h1 class="mb-3">Category Details</h1>
+
+<p class="text-muted">
+    View category information and its hierarchy.
+</p>
+
+@if (_isLoading)
+{
+    <p class="text-muted"><em>Loading category...</em></p>
+}
+else if (_category is null)
+{
+    <p class="text-danger">Category not found.</p>
+}
+else
+{
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <dl class="row">
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">@_category.Name</dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">
+                    @if (string.IsNullOrWhiteSpace(_category.Description))
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                    else
+                    {
+                        @_category.Description
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Parent Category</dt>
+                <dd class="col-sm-9">
+                    @if (_category.ParentCategory is null)
+                    {
+                        <span class="text-muted">None</span>
+                    }
+                    else
+                    {
+                        @_category.ParentCategory.Name
+                    }
+                </dd>
+            </dl>
+        
+
+            <div class="d-flex justify-content-between mt-4">
+                <a class="btn btn-outline-secondary"
+                   href="/categories">
+                    ← Back
+                </a>
+
+                <a class="btn btn-primary"
+                   href="@($"/categories/edit?id={_category.Id}")">
+                    Edit
+                </a>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    private Category? _category;
+    private bool _isLoading = true;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        _category = await context.Categories
+            .Include(c => c.ParentCategory)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == Id);
+
+        if (_category is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        _isLoading = false;
+    }
+}
+

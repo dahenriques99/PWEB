@@ -1,4 +1,4 @@
-﻿namespace RCL.Dtos.Response;
+namespace RCL.Dtos.Response;
 
 public class CategoryDto
 {

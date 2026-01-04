@@ -1,0 +1,182 @@
+﻿@page "/orders"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using MyMedia.Infrastructure
+@using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure.Entities.enums
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+
+<PageTitle>Orders</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="mb-0">Orders</h3>
+        <small class="text-muted">
+            Manage the available orders
+        </small>
+    </div>
+</div>
+
+<hr/>
+
+<div class="row mb-3 g-2">
+    <div class="col-md-4">
+        <InputText class="form-control"
+                   placeholder="Search by user email..."
+                   @bind-Value="_search" />
+    </div>
+
+    <div class="col-md-3">
+        <InputSelect class="form-select"
+                     @bind-Value="_statusFilter">
+            <option value="">All statuses</option>
+            @foreach (var status in Enum.GetValues<OrderStatus>())
+            {
+                <option value="@status">@status</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="col-md-3">
+        <InputDate class="form-control"
+                   @bind-Value="_fromDate" />
+    </div>
+
+    <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100"
+                @onclick="ClearFilters">
+            Clear
+        </button>
+    </div>
+</div>
+
+<hr/>
+
+@if (_orders is null)
+{
+    <p><em>Loading orders…</em></p>
+}
+else if (!_orders.Any())
+{
+    <div class="alert alert-info">
+        No orders have been created yet.
+    </div>
+}
+else
+{
+    <QuickGrid Items="FilteredOrders" Class="table table-striped table-hover align-middle">
+        <PropertyColumn Title="Customer"
+                        Property="o => o.User.Name"
+                        Sortable="true"/>
+
+        <PropertyColumn Title="Total"
+                        Property="o => o.TotalAmount"
+                        Sortable="true"
+                        Format="0.00 €"/>
+
+        <TemplateColumn Title="Status" Sortable="true" Context="o">
+                <span class="badge @GetStatusClass(o.Status)">
+                    @GetStatusLabel(o.Status)
+                </span>
+        </TemplateColumn>
+
+        <PropertyColumn Title="Date"
+                        Property="o => o.Date"
+                        Sortable="true"
+                        Format="dd/MM/yyyy HH:mm"/>
+
+        <PropertyColumn Title="Delivery"
+                        Property="o => o.DeliveryMode.Name"
+                        Sortable="true"/>
+
+        <TemplateColumn Context="order" Align="Align.End">
+            <div class="btn-group btn-group-sm" role="group">
+                <a class="btn btn-outline-secondary"
+                   href="@($"/orders/edit?id={order.Id}")">
+                    Edit
+                </a>
+                <a class="btn btn-outline-info"
+                   href="@($"/orders/details?id={order.Id}")">
+                    Details
+                </a>
+                <a class="btn btn-outline-danger"
+                   href="@($"/orders/delete?id={order.Id}")">
+                    Delete
+                </a>
+            </div>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private ApplicationDbContext? _context;
+    private IQueryable<Order>? _orders;
+    
+    private string? _search;
+    private OrderStatus? _statusFilter;
+    private DateTime? _fromDate;
+
+    private IQueryable<Order> FilteredOrders =>
+        _context.Orders
+            .Include(o => o.User)
+            .Include(o => o.DeliveryMode)
+            .Where(o =>
+                (string.IsNullOrEmpty(_search) ||
+                 o.User.Email!.Contains(_search)) &&
+
+                (!_statusFilter.HasValue ||
+                 o.Status == _statusFilter) &&
+
+                (!_fromDate.HasValue ||
+                 o.Date >= _fromDate)
+            )
+            .OrderByDescending(o => o.Date);
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _context = await DbFactory.CreateDbContextAsync();
+
+        _orders = _context.Orders
+            .Include(o => o.User)
+            .Include(o => o.DeliveryMode)
+            .OrderByDescending(o => o.Date);
+    }
+
+    private static string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.InCart => "In Cart",
+        OrderStatus.PendingPayment => "Pending Payment",
+        OrderStatus.PaymentFailed => "Payment Failed",
+        OrderStatus.PaymentAccepted => "Payment Accepted",
+        OrderStatus.Shipped => "Shipped",
+        OrderStatus.Completed => "Completed",
+        OrderStatus.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+
+    private static string GetStatusClass(OrderStatus status) => status switch
+    {
+        OrderStatus.InCart => "bg-secondary",
+        OrderStatus.PendingPayment => "bg-warning text-dark",
+        OrderStatus.PaymentFailed => "bg-danger",
+        OrderStatus.PaymentAccepted => "bg-info",
+        OrderStatus.Shipped => "bg-primary",
+        OrderStatus.Completed => "bg-success",
+        OrderStatus.Cancelled => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    private void ClearFilters()
+    {
+        _statusFilter = null;
+        _fromDate = null;
+        _search = null;
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_context is not null)
+            await _context.DisposeAsync();
+    }
+
+}

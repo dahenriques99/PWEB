@@ -1,0 +1,224 @@
+﻿@page "/admin/users"
+@attribute [Authorize(Roles = "Admin, Worker")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure
+@using MyMedia.Infrastructure.Entities.enums
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<PageTitle>User Management</PageTitle>
+
+<h1>User Management</h1>
+
+<div class="row mb-3 align-items-end">
+    <div class="col-md-3">
+        <InputText class="form-control"
+                   placeholder="Search by name or email..."
+                   @bind-Value="_search" />
+    </div>
+    
+    <div class="col-md-3">
+        <label class="form-label">Role</label>
+        <InputSelect @bind-Value="_selectedRole" class="form-select">
+            <option value="">All Roles</option>
+            @foreach (var role in Enum.GetNames<UserRoles>())
+            {
+                <option value="@role">@role</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <InputSelect @bind-Value="_selectedStatus" class="form-select">
+            <option value="">All Status</option>
+            @foreach (var status in Enum.GetNames<UserStatus>())
+            {
+                <option value="@status">@status</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="col-md-3 text-end">
+        <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+            Clear Filters
+        </button>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="alert alert-secondary mt-3 text-center">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading users...
+    </div>
+}
+else if (!FilteredUsers.Any())
+{
+    <div class="alert alert-warning mt-3 text-center">
+        <strong>No users found.</strong>
+        <div class="small text-muted">
+            Try adjusting or clearing the filters.
+        </div>
+    </div>
+}
+else
+{
+    <QuickGrid Class="table table-striped table-hover" Items="FilteredUsers">
+        <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
+        <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
+
+        <TemplateColumn Context="user" Title="Roles">
+            @foreach (var role in GetUserRoles(user))
+            {
+                <span class="badge bg-info">@role</span>
+            }
+        </TemplateColumn>
+
+        <TemplateColumn Context="user" Title="Status">
+            @switch (user.Status)
+            {
+                case UserStatus.Active:
+                    <span class="badge bg-success">Active</span>
+                    break;
+
+                case UserStatus.Pending:
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    <button class="btn btn-sm btn-success ms-2"
+                            @onclick="() => ConfirmUser(user)">
+                        Activate
+                    </button>
+                    break;
+
+                default:
+                    <span class="badge bg-secondary">@user.Status</span>
+                    <button class="btn btn-sm btn-success ms-2"
+                            @onclick="() => ConfirmUser(user)">
+                        Activate
+                    </button>
+                    break;
+            }
+        </TemplateColumn>
+
+        <TemplateColumn Context="user" Align="Align.End">
+            <div class="btn-group btn-group-sm" role="group">
+                <a class="btn btn-outline-secondary"
+                   href="@($"admin/users/edit?id={user.Id}")">
+                    Edit
+                </a>
+                <a class="btn btn-outline-info"
+                   href="@($"admin/users/details?id={user.Id}")">
+                    Details
+                </a>
+                <button class="btn btn-outline-danger"
+                        @onclick="() => DeactivateUser(user)"
+                        disabled="@(!(user.Status == UserStatus.Active && !IsAdmin(user)))">
+                    Deactivate
+                </button>
+            </div>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private string? _selectedRole; // Selected role from dropdown
+    private string? _selectedStatus; // Selected email confirmation status from dropdown
+    private string? _search;
+    private Dictionary<string, List<string>> _userRoles = new();
+    private List<ApplicationUser> _users = [];
+    private bool _isLoading = true;
+    
+    private IQueryable<ApplicationUser> FilteredUsers =>
+        _users
+            .Where(u =>
+                (string.IsNullOrWhiteSpace(_search) ||
+                 u.Name!.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                 u.Email!.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+
+                (string.IsNullOrEmpty(_selectedStatus) ||
+                 u.Status == Enum.Parse<UserStatus>(_selectedStatus)) &&
+
+                (string.IsNullOrEmpty(_selectedRole) ||
+                 (_userRoles.TryGetValue(u.Id, out var roles) &&
+                  roles.Contains(_selectedRole)))
+            )
+            .AsQueryable();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        await LoadRoles();
+        _isLoading = false;
+    }
+
+    private async Task LoadUsers()
+    {
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+        _users = await context.Users
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    private async Task LoadRoles()
+    {
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+        _userRoles = await context.UserRoles
+            .Join(context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => new { ur.UserId, r.Name })
+            .GroupBy(x => x.UserId)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => g.Select(x => x.Name!).ToList()
+            );
+    }
+    
+    private bool IsAdmin(ApplicationUser user)
+    {
+        return _userRoles.TryGetValue(user.Id, out var roles)
+               && roles.Contains(nameof(UserRoles.Admin));
+    }
+    
+    private async Task ConfirmUser(ApplicationUser user)
+    {
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        var entity = await context.Users.FindAsync(user.Id);
+        if (entity is null) return;
+
+        entity.Status = UserStatus.Active;
+        await context.SaveChangesAsync();
+
+        await LoadUsers();
+    }
+    
+    private IEnumerable<string> GetUserRoles(ApplicationUser user)
+        => _userRoles.TryGetValue(user.Id, out var roles)
+            ? roles
+            : Enumerable.Empty<string>();
+
+    private async Task DeactivateUser(ApplicationUser user)
+    {
+        if (IsAdmin(user)) return;
+
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        var entity = await context.Users.FindAsync(user.Id);
+        if (entity is null) return;
+
+        entity.Status = UserStatus.Inactive;
+        await context.SaveChangesAsync();
+
+        await LoadUsers();
+    }
+
+    private void ClearFilters()
+    {
+        _search = null;
+        _selectedRole = null;
+        _selectedStatus = null;
+    }
+
+}

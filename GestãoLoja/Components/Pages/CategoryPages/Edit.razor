@@ -1,0 +1,143 @@
+﻿@page "/categories/edit"
+@using Microsoft.EntityFrameworkCore
+@using MyMedia.Infrastructure.Entities
+@inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Category</PageTitle>
+
+@if (_isLoading)
+{
+    <p><em>Loading category...</em></p>
+}
+else if (Category is null)
+{
+    <p class="text-danger">Category not found.</p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">Edit Category</h3>
+            <small class="text-muted">
+                Update the category details and optionally assign a parent category.
+            </small>
+        </div>
+    </div>
+    
+    <hr/>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <EditForm Model="Category" OnValidSubmit="UpdateCategory">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">
+                        Name <span class="text-danger">*</span>
+                    </label>
+                    <InputText id="name"
+                               class="form-control"
+                               @bind-Value="Category.Name" />
+                    <ValidationMessage For="() => Category.Name" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <InputText id="description"
+                               class="form-control"
+                               @bind-Value="Category.Description" />
+                    <ValidationMessage For="() => Category.Description" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="parentCategory" class="form-label">
+                        Parent Category
+                    </label>
+                    <InputSelect id="parentCategory"
+                                 class="form-select"
+                                 @bind-Value="Category.ParentCategoryId">
+                        <option value="">— None —</option>
+                        @foreach (var category in _categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a class="btn btn-outline-secondary"
+                       href="/categories">
+                        ← Back
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            disabled="_isSaving">
+                        @(_isSaving ? "Saving..." : "Save changes")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Category? Category { get; set; }
+
+    private List<Category> _categories = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var context = await DbFactory.CreateDbContextAsync();
+
+        Category ??= await context.Categories
+            .FirstOrDefaultAsync(c => c.Id == Id);
+
+        if (Category is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        _categories = await context.Categories
+            .AsNoTracking()
+            .Where(c => c.Id != Category.Id) // prevent self-parenting
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+
+        _isLoading = false;
+    }
+
+    private async Task UpdateCategory()
+    {
+        _isSaving = true;
+
+        await using var context = await DbFactory.CreateDbContextAsync();
+        context.Attach(Category!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!await context.Categories.AnyAsync(c => c.Id == Category!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+                return;
+            }
+
+            throw;
+        }
+
+        NavigationManager.NavigateTo("/categories");
+    }
+}
