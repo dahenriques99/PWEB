@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Maui.Components;
+using Microsoft.Extensions.Logging;
 using RCL.Components.Services;
 
 namespace Maui;
@@ -24,7 +25,7 @@ public static class MauiProgram
             client.BaseAddress = new Uri(baseUrl);
         });
         
-        builder.Services.AddScoped<ITokenStore, MauiSecureTokenStore>();
+        builder.Services.AddScoped<IKeyValueStore, MauiSecureKeyValueStore>();
         
         builder.Services.AddScoped<AuthStateService>();
         builder.Services.AddScoped<CartService>();

@@ -36,6 +36,7 @@ public class UserRepository(ApplicationDbContext dbContext) : IUserRepository
     {
         var products = await dbContext.Products
             .AsNoTracking()
+            .Include(p => p.Supplier)
             .Where(p => p.SupplierId == supplierId)
             .OrderByDescending(p => p.Id)
             .ToListAsync();

@@ -2,7 +2,7 @@
 @using RCL.Dtos.Request
 @using RCL.Dtos.Response
 @inject CartService Cart
-@inject AuthStateService Auth
+@inject AuthStateService AuthStateService
 @inject RestService RestService
 @inject NavigationManager Navigation
 
@@ -16,12 +16,19 @@
         </div>
         <button class="btn btn-primary" @onclick="GoHome">Browse products</button>
     }
-    else if (!Auth.IsLoggedIn)
+    else if (!AuthStateService.IsLoggedIn)
     {
         <div class="alert alert-warning">
             Please login to continue checkout.
         </div>
         <button class="btn btn-primary" @onclick="GoLogin">Login</button>
+    }
+    else if (AuthStateService.IsSupplier)
+    {
+        <div class="alert alert-warning">
+            Suppliers cannot checkout.
+        </div>
+        <button class="btn btn-primary" @onclick="GoHome">Back</button>
     }
     else
     {
@@ -53,12 +60,40 @@
                                 </div>
                                 <div class="text-end">
                                     <div>x @item.Quantity</div>
-                                    <div class="fw-semibold">@((item.UnitPrice * item.Quantity).ToString("0.00")) €</div>
+                                    <div class="fw-semibold">@((item.UnitPrice * item.Quantity).ToString("0.00")) €
+                                    </div>
                                 </div>
                             </div>
                         }
                     </div>
                 </div>
+
+                @if (_deliveryMethods == null)
+                {
+                    <p class="text-muted"><em>Loading delivery methods...</em></p>
+                }
+                else if (!_deliveryMethods.Any())
+                {
+                    <div class="alert alert-warning">No delivery methods available.</div>
+                }
+                else
+                {
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <strong>Delivery Mode</strong>
+                        </div>
+                        <div class="card-body">
+                            <InputSelect class="form-select" @bind-Value="_selectedDeliveryMethod">
+                                <option value="0" disabled>-- Select a delivery mode --</option>
+
+                                @foreach (var m in _deliveryMethods)
+                                {
+                                    <option value="@m.Id">@m.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                }
             </div>
 
             <div class="col-12 col-lg-5">
@@ -101,10 +136,18 @@
 @code {
     private bool _isSubmitting;
     private readonly List<string> _errors = new();
+    private List<DeliveryMethodsResponseDto>? _deliveryMethods;
+    private int _selectedDeliveryMethod = 0;
 
     private void GoLogin() => Navigation.NavigateTo("/login?returnUrl=/checkout");
     private void GoHome() => Navigation.NavigateTo("/");
     private void GoCart() => Navigation.NavigateTo("/cart");
+
+    protected async override Task OnInitializedAsync()
+    {
+        _deliveryMethods = await RestService.GetDeliveryMethods();
+        _selectedDeliveryMethod = _deliveryMethods.FirstOrDefault()?.Id ?? 0;
+    }
 
     private async Task PlaceOrder()
     {
@@ -118,8 +161,9 @@
                 Items = Cart.Items.Select(i => new CheckoutItemDto
                 {
                     ProductId = i.ProductId,
-                    Quantity = i.Quantity
-                }).ToList()
+                    Quantity = i.Quantity,
+                }).ToList(),
+                DeliveryMode = _selectedDeliveryMethod
             };
 
             var resp = await RestService.Checkout(req);
@@ -151,4 +195,5 @@
             _isSubmitting = false;
         }
     }
+
 }

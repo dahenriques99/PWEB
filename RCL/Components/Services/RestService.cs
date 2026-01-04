@@ -48,6 +48,12 @@ public class RestService(HttpClient httpClient, AuthStateService auth)
             return Enumerable.Empty<ProductResponseDto>();
         }
     }
+
+    public Task<OrderDetailsDto?> GetOrder(int id)
+    {
+        EnsureAuthHeader();
+        return httpClient.GetFromJsonAsync<OrderDetailsDto>($"/api/order/{id}");
+    }
     
     public async Task<ProductResponseDto?> GetProduct(int id)
     {
@@ -60,6 +66,13 @@ public class RestService(HttpClient httpClient, AuthStateService auth)
             Console.Error.WriteLine($"Error fetching product {id}: {ex.Message}");
             return null;
         }
+    }
+
+    public async Task<List<DeliveryMethodsResponseDto>> GetDeliveryMethods()
+    {
+        var response = await httpClient.GetFromJsonAsync<List<DeliveryMethodsResponseDto>>("/api/DeliveryMethods");
+        
+        return response ?? Enumerable.Empty<DeliveryMethodsResponseDto>().ToList();
     }
     
     public async Task<HttpResponseMessage> Checkout(CheckoutRequestDto request)
@@ -92,6 +105,12 @@ public class RestService(HttpClient httpClient, AuthStateService auth)
     {
         EnsureAuthHeader();
         return httpClient.PostAsJsonAsync("/api/product", dto);
+    }
+    
+    public Task<HttpResponseMessage> UpdateProduct(int id, UpdateProductDto dto)
+    {
+        EnsureAuthHeader();
+        return httpClient.PutAsJsonAsync($"/api/product/{id}", dto);
     }
     
     public async Task<HttpResponseMessage> Register(RegisterRequestDto request)

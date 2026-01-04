@@ -1,11 +1,10 @@
 ﻿@page "/products"
-@attribute [Authorize(Roles = "Admin, Worker")]
+@attribute [Authorize(Roles = "Admin, Employee")]
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities
-@using MyMedia.Infrastructure.Entities.enums
 @implements IAsyncDisposable
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
@@ -138,6 +137,7 @@
     private IQueryable<Product> FilteredProducts =>
         _context.Products
             .Include(p => p.ProductCategories)
+            .ThenInclude(pc => pc.Category)
             .Where(p =>
                 (string.IsNullOrEmpty(_search) ||
                  p.Name.Contains(_search)) &&

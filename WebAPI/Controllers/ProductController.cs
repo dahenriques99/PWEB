@@ -21,14 +21,13 @@ public class ProductController(IProductRepository productRepository) : Controlle
         var productDtos = products.Select(Mapper.FromProduct);
         return Ok(productDtos);
     }
-        
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetProduct(int id)
     {
-        var product = await productRepository.GetProduct(id);
-        if (product is null) return NotFound();
-        var dto = Mapper.FromProduct(product);
-        return Ok(dto);
+        var result = await productRepository.GetProduct(id);
+        if (result is null) return NotFound();
+        return Ok(result);
     }
 
     [Authorize(Roles = nameof(UserRoles.Supplier))]
@@ -47,22 +46,19 @@ public class ProductController(IProductRepository productRepository) : Controlle
 
         return Ok(result.Product);
     }
-    
-    [Authorize(Roles = nameof(UserRoles.Supplier))]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProduct(int id)
+
+    [Authorize(Roles = "Supplier")]
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto dto)
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
-                     ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        // fetch product
-        var product = await productRepository.GetProduct(id);
-        if (product is null) return NotFound();
+        var (ok, updated, errors) = await productRepository.UpdateProduct(userId, id, dto);
+        if (!ok)
+            return BadRequest(new { errors });
 
-        // HARD RULE
-        if (product.SupplierId != userId) return Forbid();
-
-        // apply changes -> set Pending -> Save
-        return Ok();
+        return Ok(updated);
     }
 }
