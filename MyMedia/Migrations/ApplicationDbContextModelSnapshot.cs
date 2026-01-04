@@ -363,21 +363,6 @@ namespace MyMedia.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
-                {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ProductId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("ProductCategories");
-                });
-
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
                 {
                     b.Property<int>("Id")

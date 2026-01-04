@@ -15,13 +15,13 @@ public class Order
 
     public decimal TotalAmount { get; set; }
 
-    public OrderStatus Status { get; set; } = OrderStatus.InCart;
+    public OrderStatus Status { get; set; }
 
-    public DateTime Date { get; set; } = DateTime.UtcNow;
+    public DateTime Date { get; set; } = DateTime.Now;
     
-    public int DeliveryId { get; set; }
+    public int DeliveryModeId { get; set; }
 
-    public DeliveryMode? DeliveryMode { get; set; }
+    public DeliveryMode DeliveryMode { get; set; }
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }

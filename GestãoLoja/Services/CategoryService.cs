@@ -1,4 +1,5 @@
 ﻿using MyMedia.Infrastructure.Entities;
+
 namespace GestãoLoja.Services;
 
 public class CategoryService(IHttpClientFactory factory)
