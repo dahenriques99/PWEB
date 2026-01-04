@@ -11,35 +11,38 @@
 
 <h1>User Management</h1>
 
-<!-- Filter by Role Dropdown -->
-<div class="row mb-3">
+<div class="row mb-3 align-items-end">
     <div class="col-md-4">
-        <label for="roleFilter" class="form-label">Filter by Role:</label>
-        <InputSelect id="roleFilter" @bind-Value="_selectedRole" class="form-select">
+        <label class="form-label">Role</label>
+        <InputSelect @bind-Value="_selectedRole" class="form-select">
             <option value="">All Roles</option>
-            @foreach (var role in Enum.GetValues(typeof(UserRoles)))
+            @foreach (var role in Enum.GetNames<UserRoles>())
             {
                 <option value="@role">@role</option>
             }
         </InputSelect>
     </div>
-</div>
 
-<!-- Filter by Status -->
-<div class="row mb-3">
     <div class="col-md-4">
-        <label for="statusFilter" class="form-label">Filter by Status:</label>
-        <InputSelect id="statusFilter" @bind-Value="_selectedStatus" class="form-select">
+        <label class="form-label">Status</label>
+        <InputSelect @bind-Value="_selectedStatus" class="form-select">
             <option value="">All Status</option>
-            @foreach (var status in Enum.GetValues(typeof(UserStatus)))
+            @foreach (var status in Enum.GetNames<UserStatus>())
             {
                 <option value="@status">@status</option>
             }
         </InputSelect>
     </div>
+
+    <div class="col-md-4 text-end">
+        <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+            Clear Filters
+        </button>
+    </div>
 </div>
 
-<QuickGrid Class="table" Items="FilteredUsers">
+
+<QuickGrid Class="table table-striped table-hover" Items="FilteredUsers">
     <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
     <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
 
@@ -51,26 +54,48 @@
     </TemplateColumn>
 
     <TemplateColumn Context="user" Title="Status">
-        @if (user.Status == UserStatus.Active)
+        @switch (user.Status)
         {
-            <span class="badge bg-success">Active</span>
-        }
-        else
-        {
-            <span class="badge bg-warning">Pending</span>
-            <button class="btn btn-sm btn-primary ms-2" @onclick="() => ConfirmUser(user)">
-                Activate
-            </button>
+            case UserStatus.Active:
+                <span class="badge bg-success">Active</span>
+                break;
+
+            case UserStatus.Pending:
+                <span class="badge bg-warning text-dark">Pending</span>
+                <button class="btn btn-sm btn-success ms-2"
+                        @onclick="() => ConfirmUser(user)">
+                    Activate
+                </button>
+                break;
+
+            default:
+                <span class="badge bg-secondary">@user.Status</span>
+                <button class="btn btn-sm btn-success ms-2"
+                        @onclick="() => ConfirmUser(user)">
+                    Activate
+                </button>
+                break;
         }
     </TemplateColumn>
-    
-    <TemplateColumn Title="Actions" Context="user">
-        <button class="btn btn-primary" href="@($"admin/users/edit?id={user.Id}")">Edit</button>
-        <button class="btn btn-secondary" href="@($"admin/users/details?id={user.Id}")">Details</button>
-        @if (user.Status == UserStatus.Active)
-        {
-            <button class="btn btn-danger" @onclick="() => DeactivateUser(user)">Deactivate</button>
-        }
+
+    <TemplateColumn Context="user" Align="Align.End">
+        <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-primary"
+               href="@($"admin/users/edit?id={user.Id}")">
+                Edit
+            </a>
+            <a class="btn btn-sm btn-secondary"
+               href="@($"admin/users/details?id={user.Id}")">
+                Details
+            </a>
+            @if (user.Status == UserStatus.Active && !IsAdmin(user))
+            {
+                <button class="btn btn-sm btn-danger"
+                        @onclick="() => DeactivateUser(user)">
+                    Deactivate
+                </button>
+            }
+        </div>
     </TemplateColumn>
 </QuickGrid>
 
@@ -81,11 +106,30 @@
     private string? _selectedStatus; // Selected email confirmation status from dropdown
     private IQueryable<ApplicationUser> FilteredUsers => FilterUsers();
 
+    private Dictionary<string, List<string>> _userRoles = new();
+
     protected override async Task OnInitializedAsync()
     {
         // Create a new DbContext instance for this page
         _context = await DbContextFactory.CreateDbContextAsync();
+        _userRoles = await _context.UserRoles
+            .Join(_context.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => new { ur.UserId, r.Name })
+            .GroupBy(x => x.UserId)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => g.Select(x => x.Name!).ToList()
+            );
     }
+
+    private bool IsAdmin(ApplicationUser user)
+    {
+        return _userRoles.TryGetValue(user.Id, out var roles)
+               && roles.Contains(nameof(UserRoles.Admin));
+    }
+
 
     private IQueryable<ApplicationUser> FilterUsers()
     {
@@ -116,55 +160,30 @@
 
     private async Task ConfirmUser(ApplicationUser user)
     {
-        try
-        {
-            await using var newContext = await DbContextFactory.CreateDbContextAsync();
-            // Set email confirmed status
-            user.Status = UserStatus.Active;
-
-            // Update the user in the database
-            newContext.Users.Update(user);
-            await newContext.SaveChangesAsync(); // Save changes to confirm the client
-
-            // Explicitly refresh the UI to reflect the change
-            StateHasChanged(); // Refresh the UI
-        }
-        catch (Exception ex)
-        {
-            // Log or handle the exception as needed
-            await Console.Error.WriteLineAsync($"Error confirming client: {ex.Message}");
-        }
+        user.Status = UserStatus.Active;
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
     }
 
-    private List<string?> GetUserRoles(ApplicationUser user)
-    {
-        using var newContext = DbContextFactory.CreateDbContext();
-        return newContext.UserRoles
-            .Where(ur => ur.UserId == user.Id)
-            .Join(newContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-            .ToList(); // Fetch roles as a list of role names
-    }
+
+    private IEnumerable<string> GetUserRoles(ApplicationUser user)
+        => _userRoles.TryGetValue(user.Id, out var roles)
+            ? roles
+            : Enumerable.Empty<string>();
 
     private async Task DeactivateUser(ApplicationUser user)
     {
-        try
-        {
-            await using var newContext = await DbContextFactory.CreateDbContextAsync();
-            // Set email confirmed status
-            user.Status = UserStatus.Inactive;
+        if (IsAdmin(user))
+            return; // or throw
 
-            // Update the user in the database
-            newContext.Users.Update(user);
-            await newContext.SaveChangesAsync(); // Save changes to confirm the client
-
-            // Explicitly refresh the UI to reflect the change
-            StateHasChanged(); // Refresh the UI
-        }
-        catch (Exception ex)
-        {
-            // Log or handle the exception as needed
-            await Console.Error.WriteLineAsync($"Error confirming client: {ex.Message}");
-        }
+        user.Status = UserStatus.Inactive;
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
     }
 
+    private void ClearFilters()
+    {
+        _selectedRole = null;
+        _selectedStatus = null;
+    }
 }

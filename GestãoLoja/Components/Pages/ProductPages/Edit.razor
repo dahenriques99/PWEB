@@ -6,144 +6,164 @@
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 @inject NavigationManager Nav
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Edit Product</PageTitle>
 
-<h1>Edit Product</h1>
+<div class="container my-4">
+    @if (Product is null)
+    {
+        <p class="text-muted text-center"><em>Loading product…</em></p>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3>Edit Product</h3>
+                <small class="text-muted">@Product.Name</small>
+            </div>
 
-<hr />
-@if (Product is null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-4">
-            <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
-                <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="Product.Id" value="@Product.Id" />
-                <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="name" class="form-label">Name:</label>
-                    <InputText id="name" @bind-Value="Product.Name" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Name" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description:</label>
-                    <InputText id="description" @bind-Value="Product.Description" class="form-control" />
-                    <ValidationMessage For="() => Product.Description" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="price" class="form-label">Price:</label>
-                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Price" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="finalprice" class="form-label">FinalPrice:</label>
-                    <InputNumber id="finalprice" @bind-Value="Product.FinalPrice" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.FinalPrice" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="stock" class="form-label">Stock:</label>
-                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Product.Stock" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="imagedata" class="form-label">ImageData:</label> 
-                    <InputFile id="imagedata" OnChange="OnImageChange" class="form-control" accept=".png, .jpg, .jpeg"/>
-                    @if (_previewUrl is not null)
-                    {
-                        <img alt="" src="@_previewUrl" style="max-width: 200px; margin-top: 10px;"/>
-                    }
-                    else
-                    {
-                        <p>No image selected</p>
-                    }
-                    <ValidationMessage For="() => Product.ImageData" class="text-danger" /> 
-                </div> 
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a href="/products" class="btn btn-secondary">Cancel</a>
-            </EditForm>
+            <div class="card-body">
+                <EditForm Model="Product" OnValidSubmit="UpdateProduct" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="row">
+                        <!-- Left: Form -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <span class="text-danger">*</span>
+                                <label class="form-label">Name</label>
+                                <InputText @bind-Value="Product.Name" class="form-control" />
+                                <ValidationMessage For="() => Product.Name" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <InputText @bind-Value="Product.Description" class="form-control" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Price (€)</label>
+                                    <InputNumber @bind-Value="Product.Price" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Final Price (€)</label>
+                                    <InputNumber @bind-Value="Product.FinalPrice" class="form-control" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <span class="text-danger">*</span>
+                                    <label class="form-label">Stock</label>
+                                    <InputNumber @bind-Value="Product.Stock" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Image -->
+                        <div class="col-md-4">
+                            <label class="form-label">Product Image</label>
+
+                            <div class="mb-3 text-center">
+                                @if (_previewUrl is not null)
+                                {
+                                    <img src="@_previewUrl"
+                                         class="img-fluid rounded border mb-2"
+                                         style="max-height: 200px;" />
+                                }
+                                else if (Product.ImageData is not null)
+                                {
+                                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(Product.ImageData)}")"
+                                         class="img-fluid rounded border mb-2"
+                                         style="max-height: 200px;" />
+                                }
+                                else
+                                {
+                                    <div class="text-muted">No image</div>
+                                }
+                            </div>
+
+                            <InputFile OnChange="OnImageChange"
+                                       class="form-control"
+                                       accept=".png,.jpg,.jpeg" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            Save Changes
+                        </button>
+                        <a class="btn btn-secondary" href="/products">
+                            Cancel
+                        </a>
+                    </div>
+                </EditForm>
+            </div>
         </div>
-    </div>
-}
-
-<div>
-    <a href="/products">Back to List</a>
+    }
 </div>
 
 @code {
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
-    [SupplyParameterFromForm]
-    private Product? Product { get; set; }
+    private Product? Product;
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        Product = await context.Products.FindAsync(Id);
+
+        Product = await context.Products
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == Id);
+
         if (Product is null)
         {
-            Nav.NavigateTo("notfound");
+            Nav.NavigateTo("/notfound");
         }
     }
 
     private async Task UpdateProduct()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        context.Attach(Product!).State = EntityState.Modified;
 
-        try
+        var existing = await context.Products.FindAsync(Product!.Id);
+        if (existing is null)
         {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!ProductExists(Product!.Id))
-            {
-                Nav.NavigateTo("notfound");
-            }
-            else
-            {
-                throw;
-            }
+            Nav.NavigateTo("/notfound");
+            return;
         }
 
+        // Update only allowed fields
+        existing.Name = Product.Name;
+        existing.Description = Product.Description;
+        existing.Price = Product.Price;
+        existing.FinalPrice = Product.FinalPrice;
+        existing.Stock = Product.Stock;
+
+        if (Product.ImageData is not null)
+        {
+            existing.ImageData = Product.ImageData;
+        }
+
+        await context.SaveChangesAsync();
         Nav.NavigateTo("/products");
     }
 
-    private bool ProductExists(int id)
-    {
-        using var context = DbFactory.CreateDbContext();
-        return context.Products.Any(e => e.Id == id);
-    }
-    
     private string? _previewUrl;
 
     private async Task OnImageChange(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-
-        // Allow up to 5 MB (adjust if needed)
         const long maxFileSize = 5 * 1024 * 1024;
 
-        using var stream = file.OpenReadStream(maxFileSize);
+        using var stream = e.File.OpenReadStream(maxFileSize);
         using var ms = new MemoryStream();
 
         await stream.CopyToAsync(ms);
 
-        var bytes = ms.ToArray();
-
-        // Save to entity
-        Product.ImageData = bytes;
-
-        // Create preview
-        var base64 = Convert.ToBase64String(bytes);
-        _previewUrl = $"data:{file.ContentType};base64,{base64}";
+        Product!.ImageData = ms.ToArray();
+        _previewUrl = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(Product.ImageData)}";
     }
 }

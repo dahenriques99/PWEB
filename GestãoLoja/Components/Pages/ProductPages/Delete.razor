@@ -6,97 +6,121 @@
 @inject IDbContextFactory<MyMedia.Infrastructure.ApplicationDbContext> DbFactory
 @inject NavigationManager Nav
 
-<PageTitle>Delete</PageTitle>
+<PageTitle>Delete Product</PageTitle>
 
-<h1>Delete</h1>
+<div class="container my-4">
+    <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Delete Product</h4>
+        </div>
 
-<p>Are you sure you want to delete this?</p>
-@if (!_canDelete)
-{
-    <p class="text-danger"><em>Unable to delete product!</em></p>
-}
-<div>
-    <h2>Product</h2>
-    <hr/>
-    @if (_product is null)
-    {
-        <p><em>Loading...</em></p>
-    }
-    else
-    {
-        <dl class="row">
-            <dt class="col-sm-2">Name</dt>
-            <dd class="col-sm-10">@_product.Name</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Description</dt>
-            <dd class="col-sm-10">@_product.Description</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Price</dt>
-            <dd class="col-sm-10">@_product.Price</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">FinalPrice</dt>
-            <dd class="col-sm-10">@_product.FinalPrice</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Stock</dt>
-            <dd class="col-sm-10">@_product.Stock</dd>
-        </dl>
-        <dt class="col-sm-2">Image</dt>
-        <dd class="col-sm-10">
-            @if (_product.ImageData != null)
+        <div class="card-body">
+            @if (_product is null)
             {
-                <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(_product.ImageData)}")"
-                     alt="@_product.Name"
-                     style="max-width:200px"/>
+                <p class="text-muted"><em>Loading product…</em></p>
             }
             else
             {
-                <img src="/img/no-image.jpg" style="max-width: 100px; max-height: 100px;" alt="No product image"/>
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action is irreversible.
+                </div>
+
+                @if (!_canDelete)
+                {
+                    <div class="alert alert-danger">
+                        This product cannot be deleted because it is associated with existing orders.
+                    </div>
+                }
+
+                <dl class="row">
+                    <dt class="col-sm-3">Name</dt>
+                    <dd class="col-sm-9">@_product.Name</dd>
+
+                    <dt class="col-sm-3">Description</dt>
+                    <dd class="col-sm-9">@_product.Description</dd>
+
+                    <dt class="col-sm-3">Price</dt>
+                    <dd class="col-sm-9">@($"{_product.Price:0.00} €")</dd>
+
+                    <dt class="col-sm-3">Final Price</dt>
+                    <dd class="col-sm-9">@($"{_product.FinalPrice:0.00} €")</dd>
+
+                    <dt class="col-sm-3">Stock</dt>
+                    <dd class="col-sm-9">@_product.Stock</dd>
+
+                    <dt class="col-sm-3">Image</dt>
+                    <dd class="col-sm-9">
+                        @if (_product.ImageData is not null)
+                        {
+                            <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(_product.ImageData)}")"
+                                 class="img-fluid rounded border"
+                                 style="max-height: 200px;" />
+                        }
+                        else
+                        {
+                            <span class="text-muted">No image</span>
+                        }
+                    </dd>
+                </dl>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-danger"
+                            @onclick="DeleteProduct"
+                            disabled="@(!_canDelete)">
+                        Delete
+                    </button>
+
+                    <button class="btn btn-secondary" @onclick="Cancel">
+                        Cancel
+                    </button>
+                </div>
             }
-        </dd>
-        <EditForm method="post" Model="_product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(_product is null)">Delete</button>
-            <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
-        </EditForm>
-    }
+        </div>
+    </div>
 </div>
 
 @code {
     private Product? _product;
-
-    [SupplyParameterFromQuery] private int Id { get; set; }
-
     private bool _canDelete = true;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        _product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+
+        _product = await context.Products
+            .Include(p => p.OrderItems)
+            .FirstOrDefaultAsync(p => p.Id == Id);
 
         if (_product is null)
         {
-            Nav.NavigateTo("notfound");
+            Nav.NavigateTo("/notfound");
+            return;
         }
+
+        _canDelete = !_product.OrderItems.Any();
     }
 
     private async Task DeleteProduct()
     {
+        if (!_canDelete || _product is null)
+            return;
+
         await using var context = await DbFactory.CreateDbContextAsync();
-        if (_product is { OrderItems.Count: > 0 })
+
+        var product = await context.Products.FindAsync(_product.Id);
+        if (product is null)
         {
-            _canDelete = false;
+            Nav.NavigateTo("/notfound");
             return;
         }
 
-        if (_canDelete)
-        {
-            context.Products.Remove(_product!);
-            await context.SaveChangesAsync();
-            Nav.NavigateTo("/products");
-        }
+        context.Products.Remove(product);
+        await context.SaveChangesAsync();
+
+        Nav.NavigateTo("/products");
     }
 
     private void Cancel() => Nav.NavigateTo("/products");
