@@ -8,48 +8,94 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager NavigationManager
+@using System.Globalization
 
-<PageTitle>Details</PageTitle>
+<PageTitle>Product Details</PageTitle>
 
-<h1>Details</h1>
-
-<div>
-    <h2>Product</h2>
-    <hr />
+<div class="container my-4">
     @if (_product is null)
     {
-        <p><em>Loading...</em></p>
+        <div class="text-center text-muted">
+            <em>Loading product…</em>
+        </div>
     }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Supplier</dt>
-            <dd class="col-sm-10">@_product.Supplier?.Name</dd>
-            <dt class="col-sm-2">Name</dt>
-            <dd class="col-sm-10">@_product.Name</dd>
-            <dt class="col-sm-2">Description</dt>
-            <dd class="col-sm-10">@_product.Description</dd>
-            <dt class="col-sm-2">Price</dt>
-            <dd class="col-sm-10">@_product.Price</dd>
-            <dt class="col-sm-2">Final Price</dt>
-            <dd class="col-sm-10">@_product.FinalPrice</dd>
-            <dt class="col-sm-2">Stock</dt>
-            <dd class="col-sm-10">@_product.Stock</dd>
-            <dt class="col-sm-2">Image</dt>
-            <dd class="col-sm-10">
-                @if (_product.ImageData != null)
-                {
-                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(_product.ImageData)}")"
-                         style="max-width:200px" />
-                }
-                else
-                {
-                    <img src="/img/no-image.jpg" style="max-width: 100px; max-height: 100px;" alt="No product image"/>
-                }
-            </dd>
-        </dl>
-        <div>
-            <a href="@($"/products/edit?id={_product.Id}")">Edit</a> |
-            <a href="@($"/products")">Back to List</a>
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3>@_product.Name</h3>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <!-- Image -->
+                    <div class="col-md-4 text-center">
+                        @if (_product.ImageData is not null)
+                        {
+                            <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(_product.ImageData)}")"
+                                 class="img-fluid rounded border"
+                                 style="max-height: 250px;" />
+                        }
+                        else
+                        {
+                            <img src="/img/no-image.jpg"
+                                 class="img-fluid rounded border"
+                                 style="max-height: 250px;"
+                                 alt="No product image" />
+                        }
+                    </div>
+
+                    <!-- Details -->
+                    <div class="col-md-8">
+                        <dl class="row">
+                            <dt class="col-sm-4">Supplier</dt>
+                            <dd class="col-sm-8">@_product.Supplier?.Name</dd>
+
+                            <dt class="col-sm-4">Description</dt>
+                            <dd class="col-sm-8">
+                                @if (string.IsNullOrEmpty(_product.Description))
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                                else
+                                {
+                                    @_product.Description
+                                }
+                            </dd>
+
+                            <dt class="col-sm-4">Price</dt>
+                            <dd class="col-sm-8">
+                                @_product.Price.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))
+                            </dd>
+
+                            <dt class="col-sm-4">Final Price</dt>
+                            <dd class="col-sm-8 fw-bold">
+                                @_product.FinalPrice.ToString("C", CultureInfo.GetCultureInfo("pt-PT"))
+                            </dd>
+
+                            <dt class="col-sm-4">Stock</dt>
+                            <dd class="col-sm-8">
+                                @_product.Stock
+                                @if (_product.Stock == 0)
+                                {
+                                    <span class="badge bg-danger ms-2">Out of stock</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a class="btn btn-primary"
+                   href="@($"/products/edit?id={_product.Id}")">
+                    Edit
+                </a>
+                <a class="btn btn-secondary" href="/products">
+                    Back to List
+                </a>
+            </div>
         </div>
     }
 </div>
@@ -63,14 +109,14 @@
     protected override async Task OnInitializedAsync()
     {
         await using var context = await DbFactory.CreateDbContextAsync();
-        _product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
-
+        _product = await context.Products
+            .Include(p => p.Supplier)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == Id);
+            
         if (_product is null)
         {
             NavigationManager.NavigateTo("notfound");
-            return;
         }
-
-        _product.Supplier = await UserManager.FindByIdAsync(_product.SupplierId);
     }
 }

@@ -10,55 +10,91 @@
 
 <PageTitle>Products</PageTitle>
 
-<h1>Products</h1>
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Products</h2>
+        <a href="products/create" class="btn btn-primary">
+            + Create Product
+        </a>
+    </div>
 
-<p>
-    <a href="products/create" class="btn btn-primary">Create New</a>
-</p>
+    @if (!_products.Any())
+    {
+        <div class="alert alert-info text-center">
+            No products found.
+        </div>
+    }
+    else
+    {
+        <QuickGrid Class="table table-striped align-middle"
+                   Items="_products"
+                   TGridItem="Product">
 
-<QuickGrid Class="table" Items="_context.Products">
-    @* <PropertyColumn Property="p => p.SupplierId" /> *@
-    <PropertyColumn Property="p => p.Name"/>
-    <PropertyColumn Property="p => p.Description"/>
-    <PropertyColumn Property="p => p.Price"/>
-    <PropertyColumn Property="p => p.FinalPrice"/>
-    <PropertyColumn Property="p => p.Stock"/>
+            <PropertyColumn Property="p => p.Name" Title="Name" Sortable="true" />
+            <PropertyColumn Property="p => p.Description" Title="Description" />
+            
+            <PropertyColumn Title="Price" Sortable="true"
+                            Property="p => p.Price"
+                            Format="C2" />
 
-    <TemplateColumn Title="Image">
-        @if (context.ImageData is null)
-        {
-            <span>No image</span>
-        }
-        else
-        {
-            <img alt="" src="@($"data:image/png;base64,{Convert.ToBase64String(context.ImageData!)}")"
-                 width="60"/>
-        }
-    </TemplateColumn>
+            <PropertyColumn Title="Final Price" Sortable="true"
+                            Property="p => p.FinalPrice"
+                            Format="C2" />
 
-    <TemplateColumn Title="Actions" Context="product">
-        <a href="@($"products/edit?id={product.Id}")">Edit</a> |
-        <a href="@($"products/details?id={product.Id}")">Details</a> |
-        <a href="@($"products/delete?id={product.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+            <PropertyColumn Property="p => p.Stock" Title="Stock" Sortable="true" />
 
+            <TemplateColumn Title="Image" Context="product">
+                <div class="text-center">
+                    @if (product.ImageData is { Length: > 0 })
+                    {
+                        <img src="@($"data:image/png;base64,{Convert.ToBase64String(product.ImageData)}")"
+                             class="rounded"
+                             style="width:60px;height:60px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </div>
+            </TemplateColumn>
+
+            <TemplateColumn Context="product">
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="@($"products/edit?id={product.Id}")">
+                        Edit
+                    </a>
+
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="@($"products/details?id={product.Id}")">
+                        Details
+                    </a>
+
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="@($"products/delete?id={product.Id}")">
+                        Delete
+                    </a>
+                </div>
+            </TemplateColumn>
+
+        </QuickGrid>
+    }
+</div>
 @code {
     private ApplicationDbContext _context = default!;
-    private List<Product> _products = new();
+    private IQueryable<Product> _products;
 
-    protected override async void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            _context = await DbFactory.CreateDbContextAsync();
-            // _products = await _context.Products.ToListAsync();
-        }
-        catch (Exception e)
-        {
-            throw; // TODO handle exception
-        }
+        _context = await DbFactory.CreateDbContextAsync();
+
+        _products = _context.Products
+            .AsNoTracking()
+            .OrderBy(p => p.Name);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _context.DisposeAsync();
+    }
 }
