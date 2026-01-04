@@ -41,7 +41,7 @@ public class Product
     public IFormFile? Image { get; set; }
     
     public ProductStatus Status { get; set; }
-
+    
     public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }
