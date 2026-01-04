@@ -24,6 +24,8 @@ public static class MauiProgram
             client.BaseAddress = new Uri(baseUrl);
         });
         
+        builder.Services.AddScoped<ITokenStore, MauiSecureTokenStore>();
+        
         builder.Services.AddScoped<AuthStateService>();
         builder.Services.AddScoped<CartService>();
 
