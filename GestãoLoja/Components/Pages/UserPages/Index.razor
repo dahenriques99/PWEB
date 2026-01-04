@@ -12,7 +12,13 @@
 <h1>User Management</h1>
 
 <div class="row mb-3 align-items-end">
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <InputText class="form-control"
+                   placeholder="Search by name or email..."
+                   @bind-Value="_search" />
+    </div>
+    
+    <div class="col-md-3">
         <label class="form-label">Role</label>
         <InputSelect @bind-Value="_selectedRole" class="form-select">
             <option value="">All Roles</option>
@@ -23,7 +29,7 @@
         </InputSelect>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">Status</label>
         <InputSelect @bind-Value="_selectedStatus" class="form-select">
             <option value="">All Status</option>
@@ -34,86 +40,121 @@
         </InputSelect>
     </div>
 
-    <div class="col-md-4 text-end">
+    <div class="col-md-3 text-end">
         <button class="btn btn-outline-secondary" @onclick="ClearFilters">
             Clear Filters
         </button>
     </div>
 </div>
 
+@if (_isLoading)
+{
+    <div class="alert alert-secondary mt-3 text-center">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading users...
+    </div>
+}
+else if (!FilteredUsers.Any())
+{
+    <div class="alert alert-warning mt-3 text-center">
+        <strong>No users found.</strong>
+        <div class="small text-muted">
+            Try adjusting or clearing the filters.
+        </div>
+    </div>
+}
+else
+{
+    <QuickGrid Class="table table-striped table-hover" Items="FilteredUsers">
+        <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
+        <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
 
-<QuickGrid Class="table table-striped table-hover" Items="FilteredUsers">
-    <PropertyColumn Property="user => user.Name" Title="Name" Sortable="true"/>
-    <PropertyColumn Property="user => user.Email" Title="Email" Sortable="true"/>
-
-    <TemplateColumn Context="user" Title="Roles">
-        @foreach (var role in GetUserRoles(user))
-        {
-            <span class="badge bg-info">@role</span>
-        }
-    </TemplateColumn>
-
-    <TemplateColumn Context="user" Title="Status">
-        @switch (user.Status)
-        {
-            case UserStatus.Active:
-                <span class="badge bg-success">Active</span>
-                break;
-
-            case UserStatus.Pending:
-                <span class="badge bg-warning text-dark">Pending</span>
-                <button class="btn btn-sm btn-success ms-2"
-                        @onclick="() => ConfirmUser(user)">
-                    Activate
-                </button>
-                break;
-
-            default:
-                <span class="badge bg-secondary">@user.Status</span>
-                <button class="btn btn-sm btn-success ms-2"
-                        @onclick="() => ConfirmUser(user)">
-                    Activate
-                </button>
-                break;
-        }
-    </TemplateColumn>
-
-    <TemplateColumn Context="user" Align="Align.End">
-        <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-primary"
-               href="@($"admin/users/edit?id={user.Id}")">
-                Edit
-            </a>
-            <a class="btn btn-sm btn-secondary"
-               href="@($"admin/users/details?id={user.Id}")">
-                Details
-            </a>
-            @if (user.Status == UserStatus.Active && !IsAdmin(user))
+        <TemplateColumn Context="user" Title="Roles">
+            @foreach (var role in GetUserRoles(user))
             {
-                <button class="btn btn-sm btn-danger"
-                        @onclick="() => DeactivateUser(user)">
+                <span class="badge bg-info">@role</span>
+            }
+        </TemplateColumn>
+
+        <TemplateColumn Context="user" Title="Status">
+            @switch (user.Status)
+            {
+                case UserStatus.Active:
+                    <span class="badge bg-success">Active</span>
+                    break;
+
+                case UserStatus.Pending:
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    <button class="btn btn-sm btn-success ms-2"
+                            @onclick="() => ConfirmUser(user)">
+                        Activate
+                    </button>
+                    break;
+
+                default:
+                    <span class="badge bg-secondary">@user.Status</span>
+                    <button class="btn btn-sm btn-success ms-2"
+                            @onclick="() => ConfirmUser(user)">
+                        Activate
+                    </button>
+                    break;
+            }
+        </TemplateColumn>
+
+        <TemplateColumn Context="user" Align="Align.End">
+            <div class="btn-group btn-group-sm" role="group">
+                <a class="btn btn-outline-secondary"
+                   href="@($"admin/users/edit?id={user.Id}")">
+                    Edit
+                </a>
+                <a class="btn btn-outline-info"
+                   href="@($"admin/users/details?id={user.Id}")">
+                    Details
+                </a>
+                <button class="btn btn-outline-danger"
+                        @onclick="() => DeactivateUser(user)"
+                        disabled="@(!(user.Status == UserStatus.Active && !IsAdmin(user)))">
                     Deactivate
                 </button>
-            }
-        </div>
-    </TemplateColumn>
-</QuickGrid>
+            </div>
+        </TemplateColumn>
+    </QuickGrid>
+}
 
 @code {
-    private ApplicationDbContext _context = default!;
-
     private string? _selectedRole; // Selected role from dropdown
     private string? _selectedStatus; // Selected email confirmation status from dropdown
-    private IQueryable<ApplicationUser> FilteredUsers => FilterUsers();
-
+    private string? _search;
     private Dictionary<string, List<string>> _userRoles = new();
+    private List<ApplicationUser> _users = [];
+    private bool _isLoading = true;
+    
+    private IQueryable<ApplicationUser> FilteredUsers =>
+        _users
+            .Where(u =>
+                (string.IsNullOrWhiteSpace(_search) ||
+                 u.Name!.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                 u.Email!.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
 
+                (string.IsNullOrEmpty(_selectedStatus) ||
+                 u.Status == Enum.Parse<UserStatus>(_selectedStatus)) &&
+
+                (string.IsNullOrEmpty(_selectedRole) ||
+                 (_userRoles.TryGetValue(u.Id, out var roles) &&
+                  roles.Contains(_selectedRole)))
+            )
+            .AsQueryable();
+    
     protected override async Task OnInitializedAsync()
     {
-        // Create a new DbContext instance for this page
-        _context = await DbContextFactory.CreateDbContextAsync();
-        _userRoles = await _context.UserRoles
-            .Join(_context.Roles,
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        _users = await context.Users
+            .AsNoTracking()
+            .ToListAsync();
+
+        _userRoles = await context.UserRoles
+            .Join(context.Roles,
                 ur => ur.RoleId,
                 r => r.Id,
                 (ur, r) => new { ur.UserId, r.Name })
@@ -122,50 +163,27 @@
                 g => g.Key,
                 g => g.Select(x => x.Name!).ToList()
             );
+        
+        _isLoading = false;
     }
-
+    
     private bool IsAdmin(ApplicationUser user)
     {
         return _userRoles.TryGetValue(user.Id, out var roles)
                && roles.Contains(nameof(UserRoles.Admin));
     }
-
-
-    private IQueryable<ApplicationUser> FilterUsers()
-    {
-        var query = _context.Users.AsQueryable();
-
-        //Admin, 
-        if (!string.IsNullOrEmpty(_selectedRole))
-        {
-            query = query.Where(u => _context.UserRoles
-                .Where(ur => ur.UserId == u.Id)
-                .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-                .Contains(_selectedRole));
-        }
-
-        if (!string.IsNullOrEmpty(_selectedStatus))
-        {
-            query = _selectedStatus switch
-            {
-                nameof(UserStatus.Pending) => query.Where(u => u.Status == UserStatus.Pending),
-                nameof(UserStatus.Active) => query.Where(u => u.Status == UserStatus.Active),
-                _ => query
-            };
-        }
-
-        return query;
-    }
-
-
+    
     private async Task ConfirmUser(ApplicationUser user)
     {
-        user.Status = UserStatus.Active;
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        var entity = await context.Users.FindAsync(user.Id);
+        if (entity is null) return;
+
+        entity.Status = UserStatus.Active;
+        await context.SaveChangesAsync();
     }
-
-
+    
     private IEnumerable<string> GetUserRoles(ApplicationUser user)
         => _userRoles.TryGetValue(user.Id, out var roles)
             ? roles
@@ -173,17 +191,22 @@
 
     private async Task DeactivateUser(ApplicationUser user)
     {
-        if (IsAdmin(user))
-            return; // or throw
+        if (IsAdmin(user)) return;
 
-        user.Status = UserStatus.Inactive;
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync();
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        var entity = await context.Users.FindAsync(user.Id);
+        if (entity is null) return;
+
+        entity.Status = UserStatus.Inactive;
+        await context.SaveChangesAsync();
     }
 
     private void ClearFilters()
     {
+        _search = null;
         _selectedRole = null;
         _selectedStatus = null;
     }
+
 }

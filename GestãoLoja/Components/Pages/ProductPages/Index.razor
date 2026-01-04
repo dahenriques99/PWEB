@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using MyMedia.Infrastructure
 @using MyMedia.Infrastructure.Entities
+@using MyMedia.Infrastructure.Entities.enums
 @implements IAsyncDisposable
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
@@ -17,6 +18,8 @@
             + Create Product
         </a>
     </div>
+    
+    <hr />
 
     @if (!_products.Any())
     {
@@ -26,8 +29,47 @@
     }
     else
     {
+        <div class="row mb-3 g-2">
+            <div class="col-md-3">
+                <InputText class="form-control"
+                           placeholder="Search products..."
+                           @bind-Value="_search" />
+            </div>
+
+            <div class="col-md-3">
+                <InputSelect class="form-select"
+                             @bind-Value="_categoryId">
+                    <option value="">All categories</option>
+                    @foreach (var category in _categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="col-md-2">
+                <InputNumber class="form-control"
+                             placeholder="Min €"
+                             @bind-Value="_minPrice" />
+            </div>
+
+            <div class="col-md-2">
+                <InputNumber class="form-control"
+                             placeholder="Max €"
+                             @bind-Value="_maxPrice" />
+            </div>
+            
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+        
+        <hr />
+
         <QuickGrid Class="table table-striped align-middle"
-                   Items="_products"
+                   Items="FilteredProducts"
                    TGridItem="Product">
 
             <PropertyColumn Property="p => p.Name" Title="Name" Sortable="true" />
@@ -43,6 +85,11 @@
 
             <PropertyColumn Property="p => p.Stock" Title="Stock" Sortable="true" />
 
+            <TemplateColumn Title="Categories" Context="product">
+                @string.Join(", ",
+                    product.ProductCategories.Select(pc => pc.Category.Name))
+            </TemplateColumn>
+            
             <TemplateColumn Title="Image" Context="product">
                 <div class="text-center">
                     @if (product.ImageData is { Length: > 0 })
@@ -58,20 +105,18 @@
                 </div>
             </TemplateColumn>
 
-            <TemplateColumn Context="product">
-                <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-primary"
-                       href="@($"products/edit?id={product.Id}")">
+            <TemplateColumn Context="product" Align="Align.End">
+                <div class="btn-group btn-group-sm" role="group">
+                    <a href="@($"products/edit?id={product.Id}")"
+                       class="btn btn-outline-secondary">
                         Edit
                     </a>
-
-                    <a class="btn btn-sm btn-outline-secondary"
-                       href="@($"products/details?id={product.Id}")">
+                    <a href="@($"products/details?id={product.Id}")"
+                       class="btn btn-outline-info">
                         Details
                     </a>
-
-                    <a class="btn btn-sm btn-outline-danger"
-                       href="@($"products/delete?id={product.Id}")">
+                    <a href="@($"products/delete?id={product.Id}")"
+                       class="btn btn-outline-danger">
                         Delete
                     </a>
                 </div>
@@ -82,15 +127,53 @@
 </div>
 @code {
     private ApplicationDbContext _context = default!;
-    private IQueryable<Product> _products;
+    private List<Product> _products = [];
+    private List<Category> _categories = [];
+    private string? _search;
+    private int? _categoryId;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
+    private string? _statusFilter;
 
+    private IQueryable<Product> FilteredProducts =>
+        _context.Products
+            .Include(p => p.ProductCategories)
+            .Where(p =>
+                (string.IsNullOrEmpty(_search) ||
+                 p.Name.Contains(_search)) &&
+
+                (!_categoryId.HasValue ||
+                 p.ProductCategories.Any(pc => pc.CategoryId == _categoryId)) &&
+
+                (!_minPrice.HasValue || p.Price >= _minPrice) &&
+                (!_maxPrice.HasValue || p.Price <= _maxPrice)
+            )
+            .OrderBy(p => p.Name);
+    
+    private void ClearFilters()
+    {
+        _search = null;
+        _statusFilter = null;
+        _categoryId = null;
+        _minPrice = null;
+        _maxPrice = null;
+    }
+    
     protected override async Task OnInitializedAsync()
     {
         _context = await DbFactory.CreateDbContextAsync();
 
-        _products = _context.Products
+        _products = await _context.Products
             .AsNoTracking()
-            .OrderBy(p => p.Name);
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+        
+        _categories = await _context.ProductCategories
+            .Select(pc => pc.Category)
+            .Distinct()
+            .OrderBy(c => c.Name)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async ValueTask DisposeAsync()

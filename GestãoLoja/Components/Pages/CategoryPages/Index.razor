@@ -18,6 +18,8 @@
     </a>
 </div>
 
+<hr />
+
 <QuickGrid Items="_categories" Class="table table-striped align-middle" Virtualize="true">
     <PropertyColumn Property="c => c.Name" Sortable="true" />
     <PropertyColumn Property="c => c.Description" />
@@ -33,7 +35,7 @@
         }
     </TemplateColumn>
 
-    <TemplateColumn Title="Actions" Context="category">
+    <TemplateColumn Context="category">
         <div class="btn-group btn-group-sm" role="group">
             <a class="btn btn-outline-secondary"
                href="@($"/categories/edit?id={category.Id}")">
