@@ -23,28 +23,36 @@
 
 <hr />
 
-<QuickGrid Class="table table-striped align-middle"
+<QuickGrid Class="table table-striped table-hover align-middle"
            Items="_context.DeliveryModes">
 
     <PropertyColumn Title="Name"
                     Property="dm => dm.Name"
                     Sortable="true" />
+    
+    <TemplateColumn Title="Details" Sortable="true">
+        @if (string.IsNullOrEmpty(context.Details))
+        {
+            @($"—")
+        }
+        else
+        {
+            @context.Details
+        }
+    </TemplateColumn>
 
-    <PropertyColumn Title="Details"
-                    Property="dm => dm.Details" />
-
-    <TemplateColumn Title="Actions" Context="deliveryMode">
+    <TemplateColumn Context="deliveryMode">
         <div class="btn-group btn-group-sm" role="group">
-            <a class="btn btn-outline-primary"
-               href="@($"deliverymodes/edit?id={deliveryMode.Id}")">
+            <a href="@($"deliverymodes/edit?id={deliveryMode.Id}")"
+               class="btn btn-outline-secondary">
                 Edit
             </a>
-            <a class="btn btn-outline-secondary"
-               href="@($"deliverymodes/details?id={deliveryMode.Id}")">
+            <a href="@($"deliverymodes/details?id={deliveryMode.Id}")"
+               class="btn btn-outline-info">
                 Details
             </a>
-            <a class="btn btn-outline-danger"
-               href="@($"deliverymodes/delete?id={deliveryMode.Id}")">
+            <a href="@($"deliverymodes/delete?id={deliveryMode.Id}")"
+               class="btn btn-outline-danger">
                 Delete
             </a>
         </div>

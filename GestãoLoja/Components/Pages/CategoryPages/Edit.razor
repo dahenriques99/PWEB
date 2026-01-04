@@ -6,25 +6,29 @@
 
 <PageTitle>Edit Category</PageTitle>
 
-<h1 class="mb-3">Edit Category</h1>
-
-<p class="text-muted">
-    Update the category details and optionally assign a parent category.
-</p>
-
 @if (_isLoading)
 {
     <p><em>Loading category...</em></p>
 }
 else if (Category is null)
 {
-    <!-- Safety fallback (should not normally happen) -->
     <p class="text-danger">Category not found.</p>
 }
 else
 {
-    <div class="row">
-        <div class="col-md-6 col-lg-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-0">Edit Category</h3>
+            <small class="text-muted">
+                Update the category details and optionally assign a parent category.
+            </small>
+        </div>
+    </div>
+    
+    <hr/>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
             <EditForm Model="Category" OnValidSubmit="UpdateCategory">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="text-danger mb-3" />
@@ -62,16 +66,17 @@ else
                     </InputSelect>
                 </div>
 
-                <div class="d-flex gap-2 mt-4">
+                <div class="d-flex justify-content-between mt-4">
+                    <a class="btn btn-outline-secondary"
+                       href="/categories">
+                        ← Back
+                    </a>
+
                     <button type="submit"
                             class="btn btn-primary"
                             disabled="_isSaving">
                         @(_isSaving ? "Saving..." : "Save changes")
                     </button>
-
-                    <a class="btn btn-secondary" href="/categories">
-                        Cancel
-                    </a>
                 </div>
             </EditForm>
         </div>
