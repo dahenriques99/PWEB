@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
 namespace MyMedia.Infrastructure.Entities;
-
 public class Category
 {
     [Key]
