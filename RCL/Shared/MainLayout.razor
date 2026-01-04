@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject AuthStateService Auth
 @inject RestService Rest
+@inject CartService CartService
 
 <div class="page">
     <div class="sidebar">
@@ -38,6 +39,7 @@
             _initialized = true;
 
             await Auth.InitializeAsync();
+            await CartService.InitializeAsync();
             Rest.EnsureAuthHeader();
 
             StateHasChanged();

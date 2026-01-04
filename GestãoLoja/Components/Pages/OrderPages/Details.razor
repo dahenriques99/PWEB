@@ -62,13 +62,45 @@
                    href="/orders">
                     Back to List
                 </a>
-
-                <a class="btn btn-primary"
-                   href="@($"/orders/edit?id={_order.Id}")">
-                    Edit Order
-                </a>
+                <button class="btn btn-success" @onclick="() => SetStatus(OrderStatus.PaymentAccepted)">Accept</button>
+                <button class="btn btn-danger" @onclick="() => SetStatus(OrderStatus.Cancelled)">Cancel</button>
+                <button class="btn btn-secondary" @onclick="() => SetStatus(OrderStatus.Shipped)">Ship</button>
             </div>
         </div>
+        @if (_order?.OrderItems?.Any() == true)
+        {
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-white">
+                    <strong>Items</strong>
+                </div>
+                <div class="card-body">
+                    @foreach (var it in _order.OrderItems)
+                    {
+                        <div class="d-flex justify-content-between border-bottom py-2 align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@(it.Product?.ImageData is { Length: > 0 }
+                                              ? $"data:image/jpeg;base64,{Convert.ToBase64String(it.Product.ImageData)}"
+                                              : "/img/no-image.jpg")"
+                                     class="rounded border"
+                                     style="width:48px;height:48px;object-fit:cover" />
+
+                                <div>
+                                    <div class="fw-semibold">@it.Product?.Name</div>
+                                    <div class="text-muted small">@it.Price.ToString("0.00") €</div>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <div>x @it.Quantity</div>
+                                <div class="fw-semibold">
+                                    @((it.Price * it.Quantity).ToString("0.00")) €
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -85,6 +117,8 @@
         _order = await context.Orders
             .Include(o => o.User)
             .Include(o => o.DeliveryMode)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Product)
             .FirstOrDefaultAsync(o => o.Id == Id);
 
         if (_order is null)
@@ -117,4 +151,26 @@
         _                            => status.ToString()
     };
 
+    private async Task SetStatus(OrderStatus status)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == Id);
+        if (order is null) return;
+
+        if (order.Status != OrderStatus.Cancelled && status == OrderStatus.Cancelled)
+        {
+            await db.Entry(order).Collection(o => o.OrderItems).LoadAsync();
+            foreach (var item in order.OrderItems)
+            {
+                var product = await db.Products.FirstOrDefaultAsync(p => p.Id == item.ProductId);
+                if (product != null)
+                    product.Stock += item.Quantity;
+            }
+        }
+        
+        order.Status = status;
+        await db.SaveChangesAsync();
+        NavigationManager.NavigateTo("/orders");
+    }
 }

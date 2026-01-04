@@ -15,6 +15,7 @@ namespace MyMedia.Migrations
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
+#pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
@@ -363,21 +364,6 @@ namespace MyMedia.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("MyMedia.Infrastructure.Entities.ProductCategory", b =>
-                {
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ProductId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("ProductCategories");
-                });
-
             modelBuilder.Entity("MyMedia.Infrastructure.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -595,6 +581,7 @@ namespace MyMedia.Migrations
 
                     b.Navigation("ProductCategories");
                 });
+#pragma warning restore 612, 618
         }
     }
 }

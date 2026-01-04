@@ -1,0 +1,104 @@
+﻿@page "/order-confirmation/{OrderId:int}"
+@using RCL.Dtos.Response
+@inject RestService RestService
+@inject NavigationManager Navigation
+
+<h3>Order placed </h3>
+
+@if (_order is null && !_notFound)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (_notFound)
+{
+    <div class="alert alert-warning">Order not found.</div>
+}
+else
+{
+    <p>
+        Your order <strong>#@_order!.OrderId</strong> was created successfully.
+        <span class="badge @StatusBadgeClass(_order.Status)">@_order.Status</span>
+    </p>
+
+    <div class="text-muted mb-3">
+        Delivery Method: <strong>@_order.DeliveryMode</strong> ·
+        Creation Date: <strong>@_order.Date.ToString("yyyy-MM-dd HH:mm")</strong>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <strong>Items</strong>
+        </div>
+        <div class="card-body">
+            @foreach (var it in _order.Items)
+            {
+                <div class="d-flex justify-content-between border-bottom py-2">
+                    <div class="d-flex gap-2 align-items-center">
+                        @if (it.ImageData is { Length: > 0 })
+                        {
+                            <img style="width:48px;height:48px;object-fit:cover"
+                                 class="rounded border"
+                                 src="@ToImg(it.ImageData)"/>
+                        }
+                        <div>
+                            <div class="fw-semibold">@it.Name</div>
+                            <div class="text-muted small">@it.Price.ToString("0.00") €</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary"
+                                @onclick="() => GoToProduct(it.ProductId)">
+                            View
+                        </button>
+                    </div>
+                    <div class="text-end">
+                        <div>x @it.Quantity</div>
+                        <div class="fw-semibold">@((it.Price * it.Quantity).ToString("0.00")) €</div>
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between pt-3">
+                <span class="fw-semibold">Total</span>
+                <span class="fw-bold">@_order.TotalAmount.ToString("0.00") €</span>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary mt-3" @onclick="GoHome">Continue shopping</button>
+}
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+    private OrderDetailsDto? _order;
+    private bool _notFound;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _notFound = false;
+        _order = await RestService.GetOrder(OrderId);
+        if (_order is null) _notFound = true;
+    }
+
+    private static string ToImg(byte[] b) => $"data:image/png;base64,{Convert.ToBase64String(b)}";
+    private void GoHome() => Navigation.NavigateTo("/");
+
+    private void GoToProduct(int id)
+    {
+        if(_order == null)
+            Navigation.NavigateTo($"/product/{id}");
+        else
+            Navigation.NavigateTo($"/product/{id}?returnUrl=/order-confirmation/{_order.OrderId}");
+    }
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        "InCart" => "bg-secondary",
+        "PendingPayment" => "bg-warning text-dark",
+        "PaymentFailed" => "bg-danger",
+        "PaymentAccepted" => "bg-info",
+        "Shipped" => "bg-primary",
+        "Completed" => "bg-success",
+        "Cancelled" => "bg-dark",
+        _ => "bg-secondary"
+    };
+}

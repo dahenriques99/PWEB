@@ -1,9 +1,11 @@
 ﻿@page "/product/{Id:int}"
 @using RCL.Dtos
+@using RCL.Dtos.Request
 @using RCL.Dtos.Response
 @inject RestService RestService
 @inject NavigationManager Navigation
 @inject CartService Cart
+@inject AuthStateService AuthStateService
 
 <div class="container mt-3">
     @if (_showAddedModal)
@@ -26,6 +28,25 @@
             </div>
         </div>
     }
+    @if (_showSavedModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Saved</h5>
+                        <button type="button" class="btn-close" @onclick="CloseSavedModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">@_savedMessage</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="CloseSavedModal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
     @if (_product is null && !_notFound)
     {
         <div class="text-muted">Loading...</div>
@@ -34,7 +55,7 @@
     {
         <div class="alert alert-warning">
             Product not found.
-            <button class="btn btn-link p-0 ms-2" @onclick="() => GoHome()">
+            <button class="btn btn-link p-0 ms-2" @onclick="() => GoBack()">
                 Go back
             </button>
         </div>
@@ -62,9 +83,19 @@
                 <h3 class="mb-1">@_product!.Name</h3>
 
                 <div class="d-flex align-items-baseline gap-3 mb-2">
-                    <div class="fs-4 fw-bold">@_product.Price.ToString("0.00") €</div>
+                    <div class="fs-4 fw-bold">@_product.FinalPrice.ToString("0.00") €</div>
                 </div>
 
+                <div class="mb-3">
+                    Categories: 
+                    @foreach (var c in _product.Categories)
+                    {
+                        <span>|</span>
+                        <span class="fw-semibold">@c</span>
+                    }
+                    <span>|</span>
+                </div>
+                
                 <div class="text-muted mb-2">
                     Supplier: <span class="fw-semibold">@_product.SupplierName</span>
                 </div>
@@ -77,20 +108,41 @@
                 {
                     <p class="mb-4">@_product.Description</p>
                 }
-
-                @if (_product.Status == "Active")
-                {
-                    <button class="btn btn-primary" @onclick="AddToCart" disabled="@(_product.Stock <= 0)">
-                        Add to cart
-                    </button>
+                <button class="btn btn-primary" @onclick="AddToCart"
+                        disabled="@(!CanBuy)">
+                    Add to cart
+                </button>
+                <button class="btn btn-outline-secondary ms-2" @onclick="GoBack">Back</button>
+                @if(_product.Status != "Active"){
+                    <p class="mb-4">Product is not yet active</p>
                 }
-                else
-                {
-                    <button class="btn btn-dark" disabled> Product not yet active</button>
+                @if(AuthStateService.IsSupplier){
+                    <p class="mb-4">Suppliers can't buy products</p>
                 }
+                
+                @if (AuthStateService.IsSupplier && _product?.SupplierId == AuthStateService.UserId)
+                {
+                    <div class="card mt-3">
+                        <div class="card-header bg-white">
+                            <strong>Supplier controls</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <label class="form-label">Stock</label>
+                                <input class="form-control" type="number" @bind="_editStock" />
+                            </div>
 
-                <button class="btn btn-outline-secondary ms-2" @onclick="GoHome">Back</button>
+                            <div class="mb-2">
+                                <label class="form-label">Base price</label>
+                                <input class="form-control" type="number" step="0.01" @bind="_editPrice" />
+                            </div>
 
+                            <button class="btn btn-primary" @onclick="SaveEdit" disabled="@_isSaving">
+                                @(_isSaving ? "Saving..." : "Save")
+                            </button>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     }
@@ -98,18 +150,95 @@
 
 @code {
     [Parameter] public int Id { get; set; }
+    
+    private readonly List<string> _errors = new();
+    
+    private int _editStock;
+    private decimal _editPrice;
+    private string _returnUrl = "/";
 
+    private bool _isSaving;
+    private bool _showSavedModal;
+    private string _savedMessage = "Product updated successfully.";
+    
     private ProductResponseDto? _product;
     private bool _notFound;
     private bool _showAddedModal;
-
+    
+    private bool CanBuy =>
+        _product is not null
+        && _product.Stock > 0
+        && !AuthStateService.IsSupplier
+        && _product.Status == "Active";
+    
     protected override async Task OnParametersSetAsync()
     {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var q = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _returnUrl = q["returnUrl"] ?? "/";
+
         _notFound = false;
         _product = await RestService.GetProduct(Id);
 
         if (_product is null)
+        {
             _notFound = true;
+            return;
+        }
+
+        _editStock = _product.Stock;
+        _editPrice = _product.Price;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (_product is null) return;
+
+        _errors.Clear();
+        _isSaving = true;
+
+        try
+        {
+            var dto = new UpdateProductDto
+            {
+                Name = _product.Name,
+                Description = _product.Description,
+                Price = _editPrice,
+                Stock = _editStock,
+            };
+
+            var resp = await RestService.UpdateProduct(_product.Id, dto);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                var updated = await resp.Content.ReadFromJsonAsync<ProductResponseDto>();
+                if (updated is null)
+                {
+                    _errors.Add("Update succeeded, but server returned no product.");
+                    return;
+                }
+
+                _product = updated;
+                _editPrice = _product.Price;
+                _editStock = _product.Stock;
+
+                _showSavedModal = true;
+
+                return;
+            }
+
+            var apiErr = await resp.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            if (apiErr?.Errors?.Any() == true) _errors.AddRange(apiErr.Errors);
+            else _errors.Add("Update failed.");
+        }
+        catch (Exception ex)
+        {
+            _errors.Add(ex.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
     }
 
     private static string ToImageSrc(byte[] bytes)
@@ -130,6 +259,22 @@
         _showAddedModal = true;
     }
 
+    private async Task CloseSavedModal()
+    {
+        _showSavedModal = false;
+        await ReloadProduct();
+    }
+
+    private async Task ReloadProduct()
+    {
+        _product = await RestService.GetProduct(Id);
+        if (_product is not null)
+        {
+            _editStock = _product.Stock;
+            _editPrice = _product.Price;
+        }
+    }
+    
     private void CloseModal() => _showAddedModal = false;
 
     private void GoToCart()
@@ -138,9 +283,9 @@
         Navigation.NavigateTo("/cart");
     }
 
-    private void GoHome()
+    private void GoBack()
     {
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo(_returnUrl);
     }
 
 }
